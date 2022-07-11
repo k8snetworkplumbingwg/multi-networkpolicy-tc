@@ -22,6 +22,26 @@ func CheckNodeNameIdentical(s1, s2 string) bool {
 	return strings.Split(s1, ".")[0] == strings.Split(s2, ".")[0]
 }
 
+// GetHostname returns OS's hostname if 'hostnameOverride' is empty; otherwise, return 'hostnameOverride'.
+func GetHostname(hostnameOverride string) (string, error) {
+	hostName := hostnameOverride
+	if len(hostName) == 0 {
+		var err error
+		hostName, err = os.Hostname()
+		if err != nil {
+			return "", fmt.Errorf("couldn't determine hostname: %v", err)
+		}
+	}
+
+	// Trim whitespaces first to avoid getting an empty hostname
+	// For linux, the hostname is read from file /proc/sys/kernel/hostname directly
+	hostName = strings.TrimSpace(hostName)
+	if len(hostName) == 0 {
+		return "", fmt.Errorf("empty hostname is invalid")
+	}
+	return strings.ToLower(hostName), nil
+}
+
 // IsMultiNetworkpolicyTarget checks if pod is in running phase and is not hostNetwork
 func IsMultiNetworkpolicyTarget(pod *v1.Pod) bool {
 	if pod.Status.Phase == v1.PodRunning && !pod.Spec.HostNetwork {
