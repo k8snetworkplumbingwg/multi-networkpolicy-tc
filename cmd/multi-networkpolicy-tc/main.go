@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 
+	"github.com/Mellanox/multi-networkpolicy-tc/pkg/server"
 	"github.com/Mellanox/multi-networkpolicy-tc/pkg/utils"
 )
 
@@ -38,16 +39,20 @@ func main() {
 	ctx := utils.SetupSignalHandler()
 	initLogs(ctx)
 	defer klog.Flush()
+	opts := server.NewOptions()
+	srv, err := server.NewServer(opts)
+	if err != nil {
+		klog.Exit(err)
+	}
 
 	cmd := &cobra.Command{
 		Use:  "multi-networkpolicy-tc",
 		Long: `TBD`,
 		Run: func(cmd *cobra.Command, args []string) {
-			klog.Infof("running multi-networkpolicy-tc")
-			klog.Infof("waiting for stop signal")
-			<- ctx.Done()
+			srv.Run(ctx)
 		},
 	}
+	opts.AddFlags(cmd.Flags())
 
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
