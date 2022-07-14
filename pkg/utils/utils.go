@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	multiv1beta1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
+	netdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -46,6 +47,27 @@ func NetworkListFromPolicy(policy *multiv1beta1.MultiNetworkPolicy) []string {
 		}
 	}
 	return policyNetworks
+}
+
+// GetDeviceIDFromNetworkStatus returns the PCI device ID associated with provided NetworkStatus
+func GetDeviceIDFromNetworkStatus(status netdefv1.NetworkStatus) (string, error) {
+	if status.DeviceInfo == nil {
+		return "", fmt.Errorf("device-info field not set in network status")
+	}
+
+	if status.DeviceInfo.Type != netdefv1.DeviceInfoTypePCI {
+		return "", fmt.Errorf("device info type is not PCI, it is %s", status.DeviceInfo.Type)
+	}
+
+	if status.DeviceInfo.Pci == nil {
+		return "", fmt.Errorf("unexpected error, device info pci field is empty")
+	}
+
+	if status.DeviceInfo.Pci.PciAddress == "" {
+		return "", fmt.Errorf("unexpected error, device info pci address is empty")
+	}
+
+	return status.DeviceInfo.Pci.PciAddress, nil
 }
 
 // IPsFromStrings receives a list of IPs in string format and returns a list of net.IP
