@@ -1,8 +1,11 @@
 package types
 
 const (
-	QDiscIngressType = "ingress"
+	QDiscIngressType QDiscType = "ingress"
 )
+
+// QDiscType is the type of qdisc
+type QDiscType string
 
 // QDiscAttr holds QDisc object attributes
 type QDiscAttr struct {
@@ -12,17 +15,19 @@ type QDiscAttr struct {
 
 // QDisc is an interface which represents a TC qdisc object
 type QDisc interface {
-	CmdLineGenerator
 	// Attrs returns QDiscAttr for a qdisc
 	Attrs() *QDiscAttr
 	// Type returns the QDisc type
-	Type() string
+	Type() QDiscType
+
+	// Driver Specific related Interfaces
+	CmdLineGenerator
 }
 
 // GenericQDisc is a generic qdisc of an arbitrary type
 type GenericQDisc struct {
 	QDiscAttr
-	QdiscType string
+	QdiscType QDiscType
 }
 
 // Attrs implements QDisc interface
@@ -31,14 +36,14 @@ func (g *GenericQDisc) Attrs() *QDiscAttr {
 }
 
 // Type implements QDisc interface
-func (g *GenericQDisc) Type() string {
+func (g *GenericQDisc) Type() QDiscType {
 	return g.QdiscType
 }
 
 // GenCmdLineArgs implements CmdLineGenerator interface
 func (g *GenericQDisc) GenCmdLineArgs() []string {
 	// for now we can just use qdisc type without attrs (parent, handle)
-	return []string{QDiscIngressType}
+	return []string{string(g.QdiscType)}
 }
 
 // NewIngressQdisc creates a new Ingress QDisc object

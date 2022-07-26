@@ -7,16 +7,18 @@ import (
 
 const (
 	// ChainDefaultParent is the default parent of a chain which is the ingress qdisc
-	ChainDefaultParent = 0xfffffff1
+	ChainDefaultParent uint32 = 0xfffffff1
 	// ChainDefaultChain is the default chain number
-	ChainDefaultChain = 0
+	ChainDefaultChain uint16 = 0
 )
 
 // Chain is an interface which represents a TC chain
 type Chain interface {
-	CmdLineGenerator
 	// Attrs returns chain attributes
 	Attrs() *ChainAttrs
+
+	// Driver Specific related Interfaces
+	CmdLineGenerator
 }
 
 // ChainAttrs are the attributes of a Chain
@@ -87,7 +89,7 @@ func (cb *ChainBuilder) WithChain(chain uint16) *ChainBuilder {
 // to create several objects, different builders should be used.
 func (cb *ChainBuilder) Build() *ChainImpl {
 	if cb.chain.Chain == nil {
-		defChain := uint16(ChainDefaultChain)
+		defChain := ChainDefaultChain
 		cb.chain.Chain = &defChain
 
 	}

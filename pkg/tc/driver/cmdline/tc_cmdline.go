@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"k8s.io/utils/exec"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/exec"
 
 	"github.com/Mellanox/multi-networkpolicy-tc/pkg/tc/types"
 )
@@ -84,7 +84,7 @@ func (t *TcCmdLineImpl) QDiscList() ([]types.QDisc, error) {
 
 	var objs []types.QDisc
 	for _, q := range cQdiscs {
-		if q.Kind != types.QDiscIngressType {
+		if q.Kind != string(types.QDiscIngressType) {
 			// skip non-ingress qdiscs
 			continue
 		}
@@ -141,13 +141,13 @@ func (t *TcCmdLineImpl) FilterList(qdisc types.QDisc) ([]types.Filter, error) {
 		if f.Options == nil {
 			continue
 		}
-		if f.Kind != types.FilterKindFlower {
+		if f.Kind != string(types.FilterKindFlower) {
 			return nil, fmt.Errorf("unexpected filter Kind: %s", f.Kind)
 		}
 
 		fb := types.NewFlowerFilterBuilder().
 			WithChain(f.Chain).
-			WithProtocol(f.Protocol).
+			WithProtocol(types.FilterProtocol(f.Protocol)).
 			WithPriority(f.Priority).
 			WithHandle(f.Options.Handle)
 
@@ -163,10 +163,10 @@ func (t *TcCmdLineImpl) FilterList(qdisc types.QDisc) ([]types.Filter, error) {
 
 		for _, a := range f.Options.Actions {
 			// TODO(adrianc): sort first by Order, ATM only one action is expected
-			if a.Kind != types.ActionTypeGeneric {
+			if a.Kind != string(types.ActionTypeGeneric) {
 				return nil, fmt.Errorf("unexpected action: %s", a.Kind)
 			}
-			act := types.NewGenericAction(a.ControlAction.Type)
+			act := types.NewGenericAction(types.ActionGenericType(a.ControlAction.Type))
 			fb.WithAction(act)
 		}
 		objs = append(objs, fb.Build())

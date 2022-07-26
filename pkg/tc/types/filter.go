@@ -7,38 +7,50 @@ import (
 
 const (
 	// Values for FilterAttrs.Protocol
-	FilterProtocolAll = "all"
-	FilterProtocolIP  = "ip" // note ip == ipv4
+	FilterProtocolAll FilterProtocol = "all"
+	FilterProtocolIP  FilterProtocol = "ip" // note ip == ipv4
 
 	// FlowerFilter.Kind
-	FilterKindFlower = "flower"
+	FilterKindFlower FilterKind = "flower"
 
 	// FlowerKeys
-	FlowerKeyIPProto = "ip_proto"
-	FlowerKeyDstIP   = "dst_ip"
-	FlowerKeyDstPort = "dst_port"
+	FlowerKeyIPProto FlowerKey = "ip_proto"
+	FlowerKeyDstIP   FlowerKey = "dst_ip"
+	FlowerKeyDstPort FlowerKey = "dst_port"
 )
+
+// FilterProtocol is the type of filter protocol
+type FilterProtocol string
+
+// FilterKind is the type of filter
+type FilterKind string
+
+// FlowerKey is the type of flower key
+type FlowerKey string
 
 // Filter represent a tc filter object
 type Filter interface {
-	CmdLineGenerator
 	// Attrs returns FilterAttrs
 	Attrs() *FilterAttrs
 	// Equals compares this Filter with other, returns true if they are equal or false otherwise
 	Equals(other Filter) bool
+
+	// Driver Specific related Interfaces
+	CmdLineGenerator
 }
 
 // FilterAttrs holds filter object attributes
 type FilterAttrs struct {
-	Kind     string
-	Protocol string
+	Kind     FilterKind
+	Protocol FilterProtocol
 	Chain    *uint16
 	Handle   *uint32
 	Priority *uint16
 }
 
 // NewFilterAttrs creates new FilterAttrs instance
-func NewFilterAttrs(kind string, protocol string, chain *uint16, handle *uint32, priority *uint16) *FilterAttrs {
+func NewFilterAttrs(
+	kind FilterKind, protocol FilterProtocol, chain *uint16, handle *uint32, priority *uint16) *FilterAttrs {
 	return &FilterAttrs{
 		Kind:     kind,
 		Protocol: protocol,
@@ -53,7 +65,7 @@ func (fa *FilterAttrs) GenCmdLineArgs() []string {
 	args := []string{}
 
 	if fa.Protocol != "" {
-		args = append(args, "protocol", fa.Protocol)
+		args = append(args, "protocol", string(fa.Protocol))
 	}
 
 	if fa.Handle != nil {
@@ -69,7 +81,7 @@ func (fa *FilterAttrs) GenCmdLineArgs() []string {
 	}
 
 	// must be last as next are filter type specific params
-	args = append(args, fa.Kind)
+	args = append(args, string(fa.Kind))
 
 	return args
 }
@@ -116,15 +128,15 @@ func (ff *FlowerSpec) GenCmdLineArgs() []string {
 	}
 
 	if ff.IpProto != nil {
-		args = append(args, FlowerKeyIPProto, *ff.IpProto)
+		args = append(args, string(FlowerKeyIPProto), *ff.IpProto)
 	}
 
 	if ff.DstIP != nil {
-		args = append(args, FlowerKeyDstIP, *ff.DstIP)
+		args = append(args, string(FlowerKeyDstIP), *ff.DstIP)
 	}
 
 	if ff.DstPort != nil {
-		args = append(args, FlowerKeyDstPort, strconv.FormatUint(uint64(*ff.DstPort), 10))
+		args = append(args, string(FlowerKeyDstPort), strconv.FormatUint(uint64(*ff.DstPort), 10))
 	}
 
 	return args
@@ -229,13 +241,13 @@ type FilterAttrsBuilder struct {
 }
 
 // WithKind adds Kind to FilterAttrsBuilder
-func (fb *FilterAttrsBuilder) WithKind(k string) *FilterAttrsBuilder {
+func (fb *FilterAttrsBuilder) WithKind(k FilterKind) *FilterAttrsBuilder {
 	fb.filterAttrs.Kind = k
 	return fb
 }
 
 // WithProtocol adds Protocol to FilterAttrsBuilder
-func (fb *FilterAttrsBuilder) WithProtocol(p string) *FilterAttrsBuilder {
+func (fb *FilterAttrsBuilder) WithProtocol(p FilterProtocol) *FilterAttrsBuilder {
 	fb.filterAttrs.Protocol = p
 	return fb
 }
@@ -284,13 +296,13 @@ type FlowerFilterBuilder struct {
 }
 
 // WithKind adds Kind to FlowerFilterBuilder
-func (fb *FlowerFilterBuilder) WithKind(k string) *FlowerFilterBuilder {
+func (fb *FlowerFilterBuilder) WithKind(k FilterKind) *FlowerFilterBuilder {
 	fb.filterAttrsBuilder = fb.filterAttrsBuilder.WithKind(k)
 	return fb
 }
 
 // WithProtocol adds Protocol to FlowerFilterBuilder
-func (fb *FlowerFilterBuilder) WithProtocol(p string) *FlowerFilterBuilder {
+func (fb *FlowerFilterBuilder) WithProtocol(p FilterProtocol) *FlowerFilterBuilder {
 	fb.filterAttrsBuilder = fb.filterAttrsBuilder.WithProtocol(p)
 	return fb
 }

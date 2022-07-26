@@ -120,7 +120,7 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 							WithProtocol(tctypes.FilterProtocolIP).
 							WithPriority(prio).
 							WithMatchKeyDstIP(ipCidr.String()).
-							WithMatchKeyIPProto(port.Protocol).
+							WithMatchKeyIPProto(string(port.Protocol)).
 							WithMatchKeyDstPort(port.Number).
 							WithAction(action).
 							Build())
@@ -141,7 +141,7 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 				tctypes.NewFlowerFilterBuilder().
 					WithProtocol(tctypes.FilterProtocolIP).
 					WithPriority(prio).
-					WithMatchKeyIPProto(port.Protocol).
+					WithMatchKeyIPProto(string(port.Protocol)).
 					WithMatchKeyDstPort(port.Number).
 					WithAction(action).
 					Build())
