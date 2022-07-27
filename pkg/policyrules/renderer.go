@@ -342,7 +342,7 @@ func (r *rendererImpl) getPorts(ports []multiv1beta1.MultiNetworkPolicyPort) []P
 			switch *p.Protocol {
 			case corev1.ProtocolTCP:
 				break
-			case ProtocolUDP:
+			case corev1.ProtocolUDP:
 				policyPort.Protocol = ProtocolUDP
 			default:
 				r.log.Error(fmt.Errorf("unsupported protocol"), "", "protocol", p.Protocol)

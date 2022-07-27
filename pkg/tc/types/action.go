@@ -2,43 +2,51 @@ package types
 
 const (
 	// Action type
-	ActionTypeGeneric = "gact"
+	ActionTypeGeneric ActionType = "gact"
 
 	// Generic control actions
-	ActionGenericPass = "pass"
-	ActionGenericDrop = "drop"
+	ActionGenericPass ActionGenericType = "pass"
+	ActionGenericDrop ActionGenericType = "drop"
 )
+
+// ActionType is the TC Action type
+type ActionType string
+
+// ActionGenericType is the Generic Action control action type
+type ActionGenericType string
 
 // Action is an interface which represents a TC action
 type Action interface {
-	CmdLineGenerator
 	// Type returns the action type
-	Type() string
+	Type() ActionType
 	// Spec returns Action Specification
 	Spec() map[string]string
 	// Equals compares this Action with other, returns true if they are equal or false otherwise
 	Equals(other Action) bool
+
+	// Driver Specific related Interfaces
+	CmdLineGenerator
 }
 
 // NewGenericAction creates a new GenericAction
-func NewGenericAction(controlAction string) *GenericAction {
+func NewGenericAction(controlAction ActionGenericType) *GenericAction {
 	return &GenericAction{controlAction: controlAction}
 }
 
 // GenericAction is a struct representing TC generic action (gact)
 type GenericAction struct {
-	controlAction string
+	controlAction ActionGenericType
 }
 
 // Type implements Action interface, it returns the type of the action
-func (a *GenericAction) Type() string {
+func (a *GenericAction) Type() ActionType {
 	return ActionTypeGeneric
 }
 
 // Spec implements Action interface, it returns the specification of the action
 func (a *GenericAction) Spec() map[string]string {
 	m := make(map[string]string)
-	m["control_action"] = a.controlAction
+	m["control_action"] = string(a.controlAction)
 	return m
 }
 
@@ -56,7 +64,7 @@ func (a *GenericAction) Equals(other Action) bool {
 
 // GenCmdLineArgs implements CmdLineGenerator interface
 func (a *GenericAction) GenCmdLineArgs() []string {
-	return []string{"action", ActionTypeGeneric, a.controlAction}
+	return []string{"action", string(ActionTypeGeneric), string(a.controlAction)}
 }
 
 // Builer

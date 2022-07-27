@@ -6,14 +6,14 @@ import (
 )
 
 const (
-	PolicyTypeIngress = "Ingress"
-	PolicyTypeEgress  = "Egress"
+	PolicyTypeIngress PolicyType = "Ingress"
+	PolicyTypeEgress  PolicyType = "Egress"
 
-	PolicyActionPass = "Pass"
-	PolicyActionDrop = "Drop"
+	PolicyActionPass PolicyAction = "Pass"
+	PolicyActionDrop PolicyAction = "Drop"
 
-	ProtocolTCP = "TCP"
-	ProtocolUDP = "UDP"
+	ProtocolTCP PolicyPortProtocol = "TCP"
+	ProtocolUDP PolicyPortProtocol = "UDP"
 )
 
 // PolicyType is the type of policy either PolicyTypeIngress or PolicyTypeEgress
@@ -21,6 +21,9 @@ type PolicyType string
 
 // PolicyAction is Action needed to be performed for the given Rule
 type PolicyAction string
+
+// PolicyPortProtocol is the Port Protocol
+type PolicyPortProtocol string
 
 // InterfaceInfo holds information about the interface
 type InterfaceInfo struct {
@@ -42,7 +45,7 @@ func (i *InterfaceInfo) GetUID() string {
 
 // Port holds port information
 type Port struct {
-	Protocol string
+	Protocol PolicyPortProtocol
 	Number   uint16
 }
 
