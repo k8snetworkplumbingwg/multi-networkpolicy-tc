@@ -20,6 +20,8 @@ type FilterSet interface {
 	// Difference returns the difference between this and other FilterSet, that is, elements in this FilterSet
 	// and not the other FilterSet
 	Difference(other FilterSet) FilterSet
+	// Equals returns true if this and other FilterSet are equal (have the same elements)
+	Equals(other FilterSet) bool
 	// List returns the Filter elements in FilterSet
 	List() []types.Filter
 }
@@ -104,6 +106,11 @@ func (f *FilterSetImpl) Difference(other FilterSet) FilterSet {
 		}
 	}
 	return fs
+}
+
+// Equals implements FilterSet
+func (f *FilterSetImpl) Equals(other FilterSet) bool {
+	return f.Len() == other.Len() && f.In(other)
 }
 
 // List implements FilterSet
