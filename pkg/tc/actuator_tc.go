@@ -31,6 +31,7 @@ func (a *ActuatorTCImpl) Actuate(objects *TCObjects) error {
 	for _, q := range currentQDiscs {
 		if q.Type() == types.QDiscIngressType {
 			ingressQDiscExist = true
+			break
 		}
 	}
 
@@ -81,7 +82,7 @@ func (a *ActuatorTCImpl) Actuate(objects *TCObjects) error {
 		newFilterSet.Add(f)
 	}
 
-	if existingFilterSet.In(newFilterSet) && existingFilterSet.Len() == newFilterSet.Len() {
+	if existingFilterSet.Equals(newFilterSet) {
 		// same filters nothing to do
 		return nil
 	}
