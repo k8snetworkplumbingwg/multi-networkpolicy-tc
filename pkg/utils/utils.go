@@ -44,11 +44,7 @@ func GetHostname(hostnameOverride string) (string, error) {
 
 // IsMultiNetworkpolicyTarget checks if pod is in running phase and is not hostNetwork
 func IsMultiNetworkpolicyTarget(pod *v1.Pod) bool {
-	if pod.Status.Phase == v1.PodRunning && !pod.Spec.HostNetwork {
-		return true
-	}
-
-	return false
+	return pod.Status.Phase == v1.PodRunning && !pod.Spec.HostNetwork
 }
 
 // NetworkListFromPolicy returns a list of networks which apply to the provided MultiNetworkPolicy
@@ -58,9 +54,15 @@ func NetworkListFromPolicy(policy *multiv1beta1.MultiNetworkPolicy) []string {
 		return []string{}
 	}
 	policyNetworksAnnot = strings.ReplaceAll(policyNetworksAnnot, " ", "")
-	policyNetworks := strings.Split(policyNetworksAnnot, ",")
+	if policyNetworksAnnot == "" {
+		return []string{}
+	}
 
+	policyNetworks := strings.Split(policyNetworksAnnot, ",")
 	for idx, policyNetName := range policyNetworks {
+		if policyNetName == "" {
+			continue
+		}
 		// fill namespace
 		if !strings.ContainsAny(policyNetName, "/") {
 			policyNetworks[idx] = fmt.Sprintf("%s/%s", policy.Namespace, policyNetName)
@@ -91,6 +93,7 @@ func GetDeviceIDFromNetworkStatus(status netdefv1.NetworkStatus) (string, error)
 }
 
 // IPsFromStrings receives a list of IPs in string format and returns a list of net.IP
+// invalid IPs will be nil net.IP
 func IPsFromStrings(ips []string) []net.IP {
 	netIPs := make([]net.IP, 0, len(ips))
 	for _, ip := range ips {
@@ -99,9 +102,11 @@ func IPsFromStrings(ips []string) []net.IP {
 	return netIPs
 }
 
-// IsIPv4 returns true if ip is of type(length) IPV4
+// IsIPv4 returns true if IP is of type IPV4
 func IsIPv4(ip net.IP) bool {
-	return len(ip) == net.IPv4len
+	// Note(adrianc): when Creating net.IP using net package e.g via net.ParseIP() it creates
+	// IP with a fixed size of net.IPv6Len, so we cannot rely on length.
+	return ip.To4() != nil
 }
 
 // PathExists returns true if path exists in the system or false if it doesnt
