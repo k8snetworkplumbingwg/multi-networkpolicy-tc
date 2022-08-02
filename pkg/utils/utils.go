@@ -44,11 +44,7 @@ func GetHostname(hostnameOverride string) (string, error) {
 
 // IsMultiNetworkpolicyTarget checks if pod is in running phase and is not hostNetwork
 func IsMultiNetworkpolicyTarget(pod *v1.Pod) bool {
-	if pod.Status.Phase == v1.PodRunning && !pod.Spec.HostNetwork {
-		return true
-	}
-
-	return false
+	return pod.Status.Phase == v1.PodRunning && !pod.Spec.HostNetwork
 }
 
 // NetworkListFromPolicy returns a list of networks which apply to the provided MultiNetworkPolicy
