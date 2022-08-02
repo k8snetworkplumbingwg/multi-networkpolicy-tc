@@ -78,6 +78,10 @@ func (f *FilterSetImpl) Len() int {
 
 // In implements FilterSet
 func (f *FilterSetImpl) In(other FilterSet) bool {
+	if f.Len() > other.Len() {
+		return false
+	}
+
 	for _, fl := range f.items {
 		if !other.Has(fl) {
 			return false
