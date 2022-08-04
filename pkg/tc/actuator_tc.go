@@ -21,6 +21,10 @@ type ActuatorTCImpl struct {
 // Actuate is an implementation of Actuator interface. it applies TCObjects on the representor
 // Note: it assumes all filters are in Chain 0
 func (a *ActuatorTCImpl) Actuate(objects *TCObjects) error {
+	if objects.QDisc == nil && len(objects.Filters) > 0 {
+		return errors.New("Qdisc cannot be nil if Filters are provided")
+	}
+
 	// list qdiscs
 	currentQDiscs, err := a.tcApi.QDiscList()
 	if err != nil {
