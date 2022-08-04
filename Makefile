@@ -95,7 +95,7 @@ golangci-lint: ## Download golangci-lint locally if necessary.
 
 MOCKERY = $(shell pwd)/bin/mockery
 mockery: ## Download mockery if necessary.
-	$(call go-install-tool,$(MOCKERY),github.com/vektra/mockery/v2@v2.12.3)
+	$(call go-install-tool,$(MOCKERY),github.com/vektra/mockery/v2@v2.14.0)
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
