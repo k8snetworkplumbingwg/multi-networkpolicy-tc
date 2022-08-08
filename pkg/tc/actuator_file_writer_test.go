@@ -27,6 +27,7 @@ var _ = Describe("Actuator file writer tests", Ordered, func() {
 	var tempDir string
 	var logger klog.Logger
 	var actuator tc.Actuator
+	ingressQdisc := types.NewIngressQDiscBuilder().Build()
 
 	BeforeAll(func() {
 		// init logger
@@ -47,7 +48,7 @@ var _ = Describe("Actuator file writer tests", Ordered, func() {
 			nonExistentPath := filepath.Join(tempDir, "does", "not", "exist")
 			actuator = tc.NewActuatorFileWriterImpl(nonExistentPath, logger)
 			objs := &tc.TCObjects{
-				QDisc: types.NewIngressQdisc(),
+				QDisc: ingressQdisc,
 			}
 			err := actuator.Actuate(objs)
 			Expect(err).To(HaveOccurred())
@@ -57,7 +58,7 @@ var _ = Describe("Actuator file writer tests", Ordered, func() {
 			invalidPath := ""
 			actuator = tc.NewActuatorFileWriterImpl(invalidPath, logger)
 			objs := &tc.TCObjects{
-				QDisc: types.NewIngressQdisc(),
+				QDisc: ingressQdisc,
 			}
 			err := actuator.Actuate(objs)
 			Expect(err).To(HaveOccurred())
@@ -67,7 +68,7 @@ var _ = Describe("Actuator file writer tests", Ordered, func() {
 	Context("Actuator file writer with valid path", func() {
 		var tmpFilePath string
 		objs := &tc.TCObjects{
-			QDisc: types.NewIngressQdisc(),
+			QDisc: ingressQdisc,
 			Filters: []types.Filter{
 				types.NewFlowerFilterBuilder().WithProtocol(types.FilterProtocolIP).WithPriority(100).Build(),
 			},
