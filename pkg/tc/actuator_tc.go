@@ -42,14 +42,14 @@ func (a *ActuatorTCImpl) Actuate(objects *TCObjects) error {
 	if objects.QDisc == nil {
 		// delete ingress qdisc if exist
 		if ingressQDiscExist {
-			return a.tcApi.QDiscDel(types.NewIngressQdisc())
+			return a.tcApi.QDiscDel(types.NewIngressQDiscBuilder().Build())
 		}
 		return nil
 	}
 
 	if len(objects.Filters) == 0 {
 		// delete filters in chain 0 if exist
-		chains, err := a.tcApi.ChainList(types.NewIngressQdisc())
+		chains, err := a.tcApi.ChainList(types.NewIngressQDiscBuilder().Build())
 		if err != nil {
 			return err
 		}

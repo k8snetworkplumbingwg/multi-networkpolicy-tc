@@ -57,7 +57,7 @@ func (s *SimpleTCGenerator) GenerateFromPolicyRuleSet(ruleSet policyrules.Policy
 	}
 
 	// create qdisc obj
-	tcObj.QDisc = tctypes.NewIngressQdisc()
+	tcObj.QDisc = tctypes.NewIngressQDiscBuilder().Build()
 
 	if ruleSet.Rules == nil {
 		// no rules

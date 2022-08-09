@@ -88,7 +88,6 @@ func (t *TcCmdLineImpl) QDiscList() ([]types.QDisc, error) {
 			// skip non-ingress qdiscs
 			continue
 		}
-		qdisc := types.NewIngressQdisc()
 		handle, err := parseMajorMinor(q.Handle)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to parse qdisc Handle")
@@ -97,8 +96,7 @@ func (t *TcCmdLineImpl) QDiscList() ([]types.QDisc, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to parse qdisc Parent")
 		}
-		qdisc.Handle = &handle
-		qdisc.Parent = &parent
+		qdisc := types.NewIngressQDiscBuilder().WithParent(parent).WithHandle(handle).Build()
 		objs = append(objs, qdisc)
 	}
 	return objs, nil
