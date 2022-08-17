@@ -26,7 +26,7 @@ func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.master, "master", o.master, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
 	fs.StringVar(&o.hostnameOverride, "hostname-override", o.hostnameOverride, "If non-empty, will use this string as identification instead of the actual hostname.")
 	fs.StringSliceVar(&o.networkPlugins, "network-plugins", []string{"accelerated-bridge"}, "List of network plugins to be be considered for network policies.")
-	fs.StringVar(&o.podRulesPath, "c", o.podRulesPath, "If non-empty, will use this path to store pod's rules for troubleshooting.")
+	fs.StringVar(&o.podRulesPath, "pod-rules-path", o.podRulesPath, "If non-empty, will use this path to store pod's rules for troubleshooting.")
 	fs.AddGoFlagSet(flag.CommandLine)
 }
 
