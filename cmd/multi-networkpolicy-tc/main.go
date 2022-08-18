@@ -40,15 +40,16 @@ func main() {
 	initLogs(ctx)
 	defer klog.Flush()
 	opts := server.NewOptions()
-	srv, err := server.NewServer(opts)
-	if err != nil {
-		klog.Exit(err)
-	}
 
 	cmd := &cobra.Command{
 		Use:  "multi-networkpolicy-tc",
 		Long: `TBD`,
 		Run: func(cmd *cobra.Command, args []string) {
+			srv, err := server.NewServer(opts)
+			if err != nil {
+				klog.Exit(err)
+			}
+
 			srv.Run(ctx)
 		},
 	}
