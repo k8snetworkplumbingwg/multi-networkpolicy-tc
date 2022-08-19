@@ -1,3 +1,12 @@
+# Setting SHELL to bash allows bash commands to be executed by recipes.
+# This is a requirement for 'setup-envtest.sh' in the test target.
+# Options are set to exit when a recipe line exits non-zero or a piped command fails.
+SHELL = /usr/bin/env bash -o pipefail
+.SHELLFLAGS = -ec
+
+# General Project parameters
+PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+
 # Image related parameters, used when building image
 IMAGE_REPOSITORY ?= nvidia.com
 IMAGE_NAME ?= multi-networkpolicy-tc
@@ -11,12 +20,6 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-# Setting SHELL to bash allows bash commands to be executed by recipes.
-# This is a requirement for 'setup-envtest.sh' in the test target.
-# Options are set to exit when a recipe line exits non-zero or a piped command fails.
-SHELL = /usr/bin/env bash -o pipefail
-.SHELLFLAGS = -ec
-
 TARGET_OS ?= $(shell go env GOOS)
 TARGET_ARCH ?= $(shell go env GOARCH)
 
@@ -26,7 +29,6 @@ GO_BUILD_OPTS ?= CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH)
 GO_BIN_SUFFIX ?= $(TARGET_OS)-$(TARGET_ARCH)
 
 all: build
-
 
 ##@ General
 
@@ -53,7 +55,6 @@ unit-test: ## Run unit tests.
 	go test ./... -coverprofile cover.out
 
 test: lint unit-test ## Run all tests (lint, unit-test).
-
 
 ##@ Build
 .PHONY: build
@@ -97,8 +98,13 @@ MOCKERY = $(shell pwd)/bin/mockery
 mockery: ## Download mockery if necessary.
 	$(call go-install-tool,$(MOCKERY),github.com/vektra/mockery/v2@v2.14.0)
 
+.PHONY: clean
+clean:
+	@rm -rf build
+	@rm -rf bin
+
+
 # go-get-tool will 'go get' any package $2 and install it to $1.
-PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 define go-install-tool
 @[ -f $(1) ] || { \
 set -e ;\

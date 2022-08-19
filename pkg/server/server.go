@@ -152,6 +152,9 @@ func (s *Server) Run(ctx context.Context) {
 	go s.SyncLoop(ctx)
 
 	s.birthCry()
+
+	// wait on Context
+	<-ctx.Done()
 }
 
 // setInitialized sets s.initialized to 1 if value is true. the set operation is atomic
