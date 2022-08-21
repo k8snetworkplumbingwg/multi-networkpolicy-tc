@@ -35,10 +35,10 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: multi-networkpolicy
+  name: multi-networkpolicy-tc
 subjects:
 - kind: ServiceAccount
-  name: multi-networkpolicy
+  name: multi-networkpolicy-tc
   namespace: kube-system
 ---
 apiVersion: v1
@@ -94,9 +94,9 @@ spec:
           capabilities:
             add: ["NET_ADMIN"]
         volumeMounts:
-        - name: var-lib-multinetworkpolicy
-          mountPath: /var/lib/multi-networkpolicy
+        - name: var-lib-multinetworkpolicy-tc
+          mountPath: /var/lib/multi-networkpolicy-tc
       volumes:
-        - name: var-lib-multinetworkpolicy
+        - name: var-lib-multinetworkpolicy-tc
           hostPath:
-            path: /var/lib/multi-networkpolicy
+            path: /var/lib/multi-networkpolicy-tc
