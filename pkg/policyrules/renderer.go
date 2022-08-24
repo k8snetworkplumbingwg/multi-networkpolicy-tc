@@ -5,14 +5,15 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
-	multiutils "github.com/Mellanox/multi-networkpolicy-tc/pkg/utils"
 	multiv1beta1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
+
+	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
+	multiutils "github.com/Mellanox/multi-networkpolicy-tc/pkg/utils"
 )
 
 // Renderer is an interface used to render PolicyRuleSet for a Pod Network
@@ -149,6 +150,8 @@ func (r *rendererImpl) renderEgressForInterface(targetInterface controllers.Inte
 		ports := r.getPorts(egressPolicyRule.Ports)
 		for _, peer := range egressPolicyRule.To {
 			// Note(adrianc): an all nil MultiNetworkPolicyPeer is skipped as it assumes to be invalid
+			// Note(adrianc): this generated a Rule per peer, this can be made more compact by consolidating all IPs
+			// per group of ports taking into account a separate rule is needed for all IPBlock except field.
 			if peer.IPBlock != nil {
 				// handle IPBlock
 				rules := r.renderRulesWithIPBlock(peer.IPBlock, ports)
