@@ -3,6 +3,7 @@ package policyrules_test
 import (
 	"fmt"
 	"net"
+	"reflect"
 
 	multiv1beta1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
 	"k8s.io/apimachinery/pkg/types"
@@ -37,9 +38,63 @@ func checkInterfaceInfos(rules []policyrules.PolicyRuleSet, podInterfaceInfos []
 	}
 }
 
+// ruleEqual checks that this and other Rules are equal
+// limitation: it assumes IPCidrs and Ports contain no duplicate entries
+func ruleEqual(this, other policyrules.Rule) bool {
+	// Note(adrianc): we can probably do something more efficient here. (e.g use maps as sets)
+	if this.Action != other.Action {
+		return false
+	}
+
+	if len(this.IPCidrs) != len(other.IPCidrs) {
+		return false
+	}
+
+	if len(this.Ports) != len(other.Ports) {
+		return false
+	}
+
+	for _, ip := range this.IPCidrs {
+		match := false
+		for _, otherIP := range other.IPCidrs {
+			if ip.String() == otherIP.String() {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
+		}
+	}
+
+	for _, port := range this.Ports {
+		match := false
+		for _, otherPort := range other.Ports {
+			if reflect.DeepEqual(port, otherPort) {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
+		}
+	}
+
+	return true
+}
+
 func checkRules(actual, expected []policyrules.Rule) {
 	ExpectWithOffset(1, actual).To(HaveLen(len(expected)))
-	ExpectWithOffset(1, actual).To(ContainElements(expected))
+	for _, actualRule := range actual {
+		match := false
+		for _, expectedRule := range expected {
+			if ruleEqual(actualRule, expectedRule) {
+				match = true
+				break
+			}
+		}
+		ExpectWithOffset(1, match).To(BeTrue(), fmt.Sprintf("actual: %+v, expected: %+v", actual, expected))
+	}
 }
 
 var _ = Describe("Renderer tests", func() {
