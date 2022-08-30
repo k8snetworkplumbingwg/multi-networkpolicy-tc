@@ -1,4 +1,4 @@
-package controllers
+package controllers_test
 
 import (
 	"flag"
@@ -17,7 +17,7 @@ func TestControllers(t *testing.T) {
 var _ = BeforeSuite(func() {
 	fs := flag.NewFlagSet("test-flag-set", flag.PanicOnError)
 	klog.InitFlags(fs)
-	Expect(fs.Set("v", "8")).ToNot(HaveOccurred())
+	Expect(fs.Set("v", "11")).ToNot(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {

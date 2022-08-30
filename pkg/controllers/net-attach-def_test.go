@@ -1,18 +1,23 @@
-package controllers
+package controllers_test
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	netdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	netdeffake "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/fake"
 	netdefinformerv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/informers/externalversions"
+	"k8s.io/client-go/tools/cache"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
 )
 
 type FakeNetDefConfigStub struct {
@@ -36,15 +41,6 @@ func (f *FakeNetDefConfigStub) OnNetDefDelete(_ *netdefv1.NetworkAttachmentDefin
 
 func (f *FakeNetDefConfigStub) OnNetDefSynced() {
 	f.CounterSynced++
-}
-
-func NewFakeNetDefConfig(stub *FakeNetDefConfigStub) *NetDefConfig {
-	configSync := 15 * time.Minute
-	fakeClient := netdeffake.NewSimpleClientset()
-	netdefInformarFactory := netdefinformerv1.NewSharedInformerFactoryWithOptions(fakeClient, configSync)
-	netdefConfig := NewNetDefConfig(netdefInformarFactory.K8sCniCncfIo().V1().NetworkAttachmentDefinitions(), configSync)
-	netdefConfig.RegisterEventHandler(stub)
-	return netdefConfig
 }
 
 func NewNetDef(namespace, name, cniConfig string) *netdefv1.NetworkAttachmentDefinition {
@@ -81,98 +77,160 @@ func NewCNIConfigList(cniName, cniType string) string {
 }
 
 var _ = Describe("net-attach-def config", func() {
+	configSync := 15 * time.Minute
+	var wg sync.WaitGroup
+	var stopCtx context.Context
+	var stopFunc context.CancelFunc
+	var fakeClient *netdeffake.Clientset
+	var informerFactory netdefinformerv1.SharedInformerFactory
+	var stub *FakeNetDefConfigStub
+	var netDefConfig *controllers.NetDefConfig
+	var nd1 *netdefv1.NetworkAttachmentDefinition
+
+	BeforeEach(func() {
+		wg = sync.WaitGroup{}
+		stopCtx, stopFunc = context.WithCancel(context.Background())
+		fakeClient = netdeffake.NewSimpleClientset()
+		informerFactory = netdefinformerv1.NewSharedInformerFactory(fakeClient, configSync)
+		netDefInformer := informerFactory.K8sCniCncfIo().V1().NetworkAttachmentDefinitions()
+		netDefConfig = controllers.NewNetDefConfig(netDefInformer, configSync)
+		stub = &FakeNetDefConfigStub{}
+		nd1 = NewNetDef("testns1", "test1", NewCNIConfig("cniConfig1", "testType1"))
+
+		netDefConfig.RegisterEventHandler(stub)
+		informerFactory.Start(stopCtx.Done())
+
+		wg.Add(1)
+		go func() {
+			netDefConfig.Run(stopCtx.Done())
+			wg.Done()
+		}()
+
+		cacheSyncCtx, cfn := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cfn()
+		Expect(cache.WaitForCacheSync(cacheSyncCtx.Done(), netDefInformer.Informer().HasSynced)).To(BeTrue())
+	})
+
+	AfterEach(func() {
+		stopFunc()
+		wg.Wait()
+	})
+
+	It("check sync handler", func() {
+		Eventually(&stub.CounterSynced).Should(HaveValue(Equal(1)))
+	})
+
 	It("check add handler", func() {
-		stub := &FakeNetDefConfigStub{}
-		ndConfig := NewFakeNetDefConfig(stub)
-		ndConfig.handleAddNetDef(NewNetDef("testns1", "test1", NewCNIConfig("cniConfig1", "testType1")))
-		Expect(stub.CounterAdd).To(Equal(1))
-		Expect(stub.CounterUpdate).To(Equal(0))
-		Expect(stub.CounterDelete).To(Equal(0))
-		Expect(stub.CounterSynced).To(Equal(0))
+		_, err := fakeClient.K8sCniCncfIoV1().NetworkAttachmentDefinitions(nd1.Namespace).
+			Create(context.Background(), nd1, metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(0)))
 	})
 
 	It("check update handler", func() {
-		stub := &FakeNetDefConfigStub{}
-		ndConfig := NewFakeNetDefConfig(stub)
-		ndConfig.handleUpdateNetDef(
-			NewNetDef("testns1", "test1", NewCNIConfig("cniConfig1", "testType1")),
-			NewNetDef("testns1", "test1", NewCNIConfig("cniConfig2", "testType2")))
-		Expect(stub.CounterAdd).To(Equal(0))
-		Expect(stub.CounterUpdate).To(Equal(1))
-		Expect(stub.CounterDelete).To(Equal(0))
-		Expect(stub.CounterSynced).To(Equal(0))
+		updatedNd, err := fakeClient.K8sCniCncfIoV1().NetworkAttachmentDefinitions(nd1.Namespace).
+			Create(context.Background(), nd1, metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		updatedNd.Spec.Config = NewCNIConfig("cniConfig2", "testType2")
+		_, err = fakeClient.K8sCniCncfIoV1().NetworkAttachmentDefinitions(updatedNd.Namespace).
+			Update(context.Background(), updatedNd, metav1.UpdateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(0)))
 	})
 
 	It("check delete handler", func() {
-		stub := &FakeNetDefConfigStub{}
-		ndConfig := NewFakeNetDefConfig(stub)
-		ndConfig.handleDeleteNetDef(NewNetDef("testns", "test", NewCNIConfig("cniConfig1", "testType1")))
-		Expect(stub.CounterAdd).To(Equal(0))
-		Expect(stub.CounterUpdate).To(Equal(0))
-		Expect(stub.CounterDelete).To(Equal(1))
-		Expect(stub.CounterSynced).To(Equal(0))
+		_, err := fakeClient.K8sCniCncfIoV1().NetworkAttachmentDefinitions(nd1.Namespace).
+			Create(context.Background(), nd1, metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		err = fakeClient.K8sCniCncfIoV1().NetworkAttachmentDefinitions(nd1.Namespace).
+			Delete(context.Background(), nd1.Name, metav1.DeleteOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(1)))
 	})
 })
 
-var _ = Describe("net-attach-def controller", func() {
-	It("Initialize and verify empty", func() {
-		netDefChanges := NewNetDefChangeTracker()
-		ndMap := make(NetDefMap)
-		ndMap.Update(netDefChanges)
-		Expect(len(ndMap)).To(Equal(0))
+var _ = Describe("net-attach-def change tracker", func() {
+	var ndChanges *controllers.NetDefChangeTracker
+	var ndMap controllers.NetDefMap
+	var nd1, nd2 *netdefv1.NetworkAttachmentDefinition
+
+	nsName := func(nd *netdefv1.NetworkAttachmentDefinition) types.NamespacedName {
+		return types.NamespacedName{Namespace: nd.Namespace, Name: nd.Name}
+	}
+
+	checkNetDefMapWithNetDef := func(nd *netdefv1.NetworkAttachmentDefinition, expectedPluginType string) {
+		ndTest, ok := ndMap[nsName(nd)]
+		ExpectWithOffset(1, ok).To(BeTrue())
+		ExpectWithOffset(1, ndTest.Name()).To(Equal(nd.Name))
+		ExpectWithOffset(1, ndTest.PluginType).To(Equal(expectedPluginType))
+		ExpectWithOffset(1, ndTest.Netdef).To(BeEquivalentTo(nd))
+	}
+
+	BeforeEach(func() {
+		ndMap = make(controllers.NetDefMap)
+		ndChanges = controllers.NewNetDefChangeTracker()
+		nd1 = NewNetDef("testns1", "test1", NewCNIConfig("cniConfig1", "testType1"))
+		nd2 = NewNetDef("testns2", "test2", NewCNIConfigList("cniConfig2", "testType2"))
 	})
 
-	It("Add netdef and verify", func() {
-		ndChanges := NewNetDefChangeTracker()
-		ndChanges.Update(nil, NewNetDef("testns1", "test1", NewCNIConfig("cniConfig1", "testType1")))
-		ndChanges.Update(nil, NewNetDef("testns2", "test2", NewCNIConfigList("cniConfig2", "testType2")))
-
-		ndMap := make(NetDefMap)
-		ndMap.Update(ndChanges)
-		Expect(len(ndMap)).To(Equal(2))
-		ndTest1, ok := ndMap[types.NamespacedName{Namespace: "testns1", Name: "test1"}]
-		Expect(ok).To(BeTrue())
-		Expect(ndTest1.Name()).To(Equal("test1"))
-		Expect(ndTest1.PluginType).To(Equal("testType1"))
-
-		ndTest2, ok := ndMap[types.NamespacedName{Namespace: "testns2", Name: "test2"}]
-		Expect(ok).To(BeTrue())
-		Expect(ndTest2.Name()).To(Equal("test2"))
-		Expect(ndTest2.PluginType).To(Equal("testType2"))
-	})
-
-	It("Add netdef then del it and verify", func() {
-		ndChanges := NewNetDefChangeTracker()
-		ndChanges.Update(nil, NewNetDef("testns1", "test1", NewCNIConfigList("cniConfig1", "testType1")))
-		ndChanges.Update(nil, NewNetDef("testns1", "test2", NewCNIConfig("cniConfig2", "testType2")))
-		ndChanges.Update(NewNetDef("testns1", "test2", NewCNIConfig("cniConfig2", "testType2")), nil)
-
-		ndMap := make(NetDefMap)
-		ndMap.Update(ndChanges)
-		Expect(len(ndMap)).To(Equal(1))
-		ndTest1, ok := ndMap[types.NamespacedName{Namespace: "testns1", Name: "test1"}]
-		Expect(ok).To(BeTrue())
-		Expect(ndTest1.Name()).To(Equal("test1"))
-		Expect(ndTest1.PluginType).To(Equal("testType1"))
-	})
-
-	It("invalid Update case", func() {
-		ndChanges := NewNetDefChangeTracker()
+	It("invalid Update case both nil - NetDefChangeTracker", func() {
 		Expect(ndChanges.Update(nil, nil)).To(BeFalse())
 	})
 
-	It("Add netdef then update it and verify", func() {
-		ndChanges := NewNetDefChangeTracker()
-		ndChanges.Update(nil, NewNetDef("testns1", "test1", NewCNIConfig("cniConfig1", "testType1")))
-		ndChanges.Update(NewNetDef("testns1", "test1", NewCNIConfig("cniConfig1", "testType1")),
-			NewNetDef("testns1", "test1", NewCNIConfigList("cniConfig2", "testType2")))
+	It("invalid Update case - NetDefMap", func() {
+		ndMap.Update(nil)
+		Expect(ndMap).To(BeEmpty())
+	})
 
-		ndMap := make(NetDefMap)
+	It("empty update - NetDefMap", func() {
 		ndMap.Update(ndChanges)
-		Expect(len(ndMap)).To(Equal(1))
-		ndTest1, ok := ndMap[types.NamespacedName{Namespace: "testns1", Name: "test1"}]
-		Expect(ok).To(BeTrue())
-		Expect(ndTest1.Name()).To(Equal("test1"))
-		Expect(ndTest1.PluginType).To(Equal("testType2"))
+		Expect(ndMap).To(BeEmpty())
+	})
+
+	It("Add netdef and verify", func() {
+		Expect(ndChanges.Update(nil, nd1)).To(BeTrue())
+		Expect(ndChanges.Update(nil, nd2)).To(BeTrue())
+
+		ndMap.Update(ndChanges)
+		Expect(ndMap).To(HaveLen(2))
+		checkNetDefMapWithNetDef(nd1, "testType1")
+		checkNetDefMapWithNetDef(nd2, "testType2")
+	})
+
+	It("Add netdef then del it and verify", func() {
+		Expect(ndChanges.Update(nil, nd1)).To(BeTrue())
+		Expect(ndChanges.Update(nil, nd2)).To(BeTrue())
+		Expect(ndChanges.Update(nd2, nil)).To(BeTrue())
+
+		ndMap.Update(ndChanges)
+		Expect(ndMap).To(HaveLen(1))
+		checkNetDefMapWithNetDef(nd1, "testType1")
+	})
+
+	It("Add netdef then update it and verify", func() {
+		Expect(ndChanges.Update(nil, nd1)).To(BeTrue())
+		updatedNd1 := NewNetDef(nd1.Namespace, nd1.Name, NewCNIConfigList("cniConfig2", "testType2"))
+		Expect(ndChanges.Update(nd1, updatedNd1)).To(BeTrue())
+
+		ndMap.Update(ndChanges)
+		Expect(ndMap).To(HaveLen(1))
+		checkNetDefMapWithNetDef(updatedNd1, "testType2")
+	})
+
+	It("add same netdef as current and previous", func() {
+		Expect(ndChanges.Update(nd1, nd1)).To(BeTrue())
+		ndMap.Update(ndChanges)
+		Expect(ndMap).To(BeEmpty())
 	})
 })

@@ -1,16 +1,20 @@
-package controllers
+package controllers_test
 
 import (
+	"context"
+	"sync"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/cache"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
 )
 
 type FakeNamespaceConfigStub struct {
@@ -36,16 +40,7 @@ func (f *FakeNamespaceConfigStub) OnNamespaceSynced() {
 	f.CounterSynced++
 }
 
-func NewFakeNamespaceConfig(stub *FakeNamespaceConfigStub) *NamespaceConfig {
-	configSync := 15 * time.Minute
-	fakeClient := fake.NewSimpleClientset()
-	informerFactory := informers.NewSharedInformerFactoryWithOptions(fakeClient, configSync)
-	nsConfig := NewNamespaceConfig(informerFactory.Core().V1().Namespaces(), configSync)
-	nsConfig.RegisterEventHandler(stub)
-	return nsConfig
-}
-
-func NewNamespace(name string, labels map[string]string) *v1.Namespace {
+func newTestNamespace(name string, labels map[string]string) *v1.Namespace {
 	return &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
@@ -55,100 +50,155 @@ func NewNamespace(name string, labels map[string]string) *v1.Namespace {
 }
 
 var _ = Describe("namespace config", func() {
+	configSync := 15 * time.Minute
+	var wg sync.WaitGroup
+	var stopCtx context.Context
+	var stopFunc context.CancelFunc
+	var fakeClient *fake.Clientset
+	var informerFactory informers.SharedInformerFactory
+	var stub *FakeNamespaceConfigStub
+	var nsConfig *controllers.NamespaceConfig
+
+	BeforeEach(func() {
+		wg = sync.WaitGroup{}
+		stopCtx, stopFunc = context.WithCancel(context.Background())
+		fakeClient = fake.NewSimpleClientset()
+		informerFactory = informers.NewSharedInformerFactory(fakeClient, configSync)
+		nsInformer := informerFactory.Core().V1().Namespaces()
+		nsConfig = controllers.NewNamespaceConfig(nsInformer, configSync)
+		stub = &FakeNamespaceConfigStub{}
+
+		nsConfig.RegisterEventHandler(stub)
+		informerFactory.Start(stopCtx.Done())
+
+		wg.Add(1)
+		go func() {
+			nsConfig.Run(stopCtx.Done())
+			wg.Done()
+		}()
+
+		cacheSyncCtx, cfn := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cfn()
+		Expect(cache.WaitForCacheSync(cacheSyncCtx.Done(), nsInformer.Informer().HasSynced)).To(BeTrue())
+	})
+
+	AfterEach(func() {
+		stopFunc()
+		wg.Wait()
+	})
+
+	It("check sync handler", func() {
+		Eventually(&stub.CounterSynced).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(0)))
+	})
+
 	It("check add handler", func() {
-		stub := &FakeNamespaceConfigStub{}
-		nsConfig := NewFakeNamespaceConfig(stub)
-		nsConfig.handleAddNamespace(NewNamespace("test", nil))
-		Expect(stub.CounterAdd).To(Equal(1))
-		Expect(stub.CounterUpdate).To(Equal(0))
-		Expect(stub.CounterDelete).To(Equal(0))
-		Expect(stub.CounterSynced).To(Equal(0))
+		_, err := fakeClient.CoreV1().Namespaces().Create(
+			context.Background(), newTestNamespace("test", nil), metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(0)))
+
 	})
 
 	It("check update handler", func() {
-		stub := &FakeNamespaceConfigStub{}
-		nsConfig := NewFakeNamespaceConfig(stub)
-		nsConfig.handleUpdateNamespace(NewNamespace("test1", nil), NewNamespace("test2", nil))
-		Expect(stub.CounterAdd).To(Equal(0))
-		Expect(stub.CounterUpdate).To(Equal(1))
-		Expect(stub.CounterDelete).To(Equal(0))
-		Expect(stub.CounterSynced).To(Equal(0))
+		ns, err := fakeClient.CoreV1().Namespaces().Create(
+			context.Background(), newTestNamespace("test", nil), metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		ns.Labels = map[string]string{"my": "label"}
+		_, err = fakeClient.CoreV1().Namespaces().Update(
+			context.Background(), ns, metav1.UpdateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(0)))
 	})
 
 	It("check delete handler", func() {
-		stub := &FakeNamespaceConfigStub{}
-		nsConfig := NewFakeNamespaceConfig(stub)
-		nsConfig.handleDeleteNamespace(NewNamespace("test1", nil))
-		Expect(stub.CounterAdd).To(Equal(0))
-		Expect(stub.CounterUpdate).To(Equal(0))
-		Expect(stub.CounterDelete).To(Equal(1))
-		Expect(stub.CounterSynced).To(Equal(0))
+		ns, err := fakeClient.CoreV1().Namespaces().Create(
+			context.Background(), newTestNamespace("test", nil), metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		err = fakeClient.CoreV1().Namespaces().Delete(context.Background(), ns.Name, metav1.DeleteOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(1)))
 	})
 })
 
-var _ = Describe("namespace controller", func() {
-	It("Initialize and verify empty", func() {
-		nsChanges := NewNamespaceChangeTracker()
-		nsMap := make(NamespaceMap)
-		nsMap.Update(nsChanges)
-		Expect(len(nsMap)).To(Equal(0))
+var _ = Describe("namespace change tracker", func() {
+	var nsMap controllers.NamespaceMap
+	var nsChanges *controllers.NamespaceChangeTracker
+	var ns1, ns2 *v1.Namespace
+
+	checkNsMapWithNS := func(ns *v1.Namespace) {
+		nsTest, ok := nsMap[ns.Name]
+		ExpectWithOffset(1, ok).To(BeTrue())
+		ExpectWithOffset(1, ok).To(BeTrue())
+		ExpectWithOffset(1, nsTest.Name).To(Equal(ns.Name))
+		ExpectWithOffset(1, nsTest.Labels).To(BeEquivalentTo(ns.Labels))
+	}
+
+	BeforeEach(func() {
+		nsChanges = controllers.NewNamespaceChangeTracker()
+		nsMap = make(controllers.NamespaceMap)
+		ns1 = newTestNamespace("test1", map[string]string{"labelName1": "labelValue1"})
+		ns2 = newTestNamespace("test2", map[string]string{"labelName2": "labelValue2"})
 	})
 
-	It("Add ns and verify", func() {
-		nsChanges := NewNamespaceChangeTracker()
-		Expect(nsChanges.Update(nil, NewNamespace("test1", map[string]string{"labelName1": "labelValue1"}))).To(BeTrue())
-
-		nsMap := make(NamespaceMap)
+	It("empty update", func() {
 		nsMap.Update(nsChanges)
-		Expect(len(nsMap)).To(Equal(1))
-		nsTest1, ok := nsMap["test1"]
-		Expect(ok).To(BeTrue())
-		Expect(nsTest1.Name).To(Equal("test1"))
-		Expect(len(nsTest1.Labels)).To(Equal(1))
-
-		labelTest, ok := nsTest1.Labels["labelName1"]
-		Expect(ok).To(BeTrue())
-		Expect(labelTest).To(Equal("labelValue1"))
+		Expect(nsMap).To(BeEmpty())
 	})
 
-	It("Add ns then del ns and verify", func() {
-		nsChanges := NewNamespaceChangeTracker()
-		Expect(nsChanges.Update(nil, NewNamespace("test1", map[string]string{"labelName1": "labelValue1"}))).To(BeTrue())
-		Expect(nsChanges.Update(nil, NewNamespace("test2", map[string]string{"labelName2": "labelValue2"}))).To(BeTrue())
-		Expect(nsChanges.Update(NewNamespace("test2", map[string]string{"labelName2": "labelValue2"}), nil)).To(BeTrue())
-
-		nsMap := make(NamespaceMap)
-		nsMap.Update(nsChanges)
-		Expect(len(nsMap)).To(Equal(1))
-		nsTest1, ok := nsMap["test1"]
-		Expect(ok).To(BeTrue())
-		Expect(nsTest1.Name).To(Equal("test1"))
-		Expect(len(nsTest1.Labels)).To(Equal(1))
-
-		labelTest, ok := nsTest1.Labels["labelName1"]
-		Expect(ok).To(BeTrue())
-		Expect(labelTest).To(Equal("labelValue1"))
-	})
-
-	It("invalid Update case", func() {
-		nsChanges := NewNamespaceChangeTracker()
+	It("invalid Update case both nil - NamespaceChangeTracker", func() {
 		Expect(nsChanges.Update(nil, nil)).To(BeFalse())
 	})
 
-	It("Add ns then update ns and verify", func() {
-		nsChanges := NewNamespaceChangeTracker()
-		Expect(nsChanges.Update(nil, NewNamespace("test1", map[string]string{"labelName1": "labelValue1"}))).To(BeTrue())
-		Expect(nsChanges.Update(nil, NewNamespace("test1", map[string]string{"labelName2": "labelValue2"}))).To(BeTrue())
-		nsMap := make(NamespaceMap)
-		nsMap.Update(nsChanges)
-		Expect(len(nsMap)).To(Equal(1))
-		nsTest1, ok := nsMap["test1"]
-		Expect(ok).To(BeTrue())
-		Expect(nsTest1.Name).To(Equal("test1"))
-		Expect(len(nsTest1.Labels)).To(Equal(1))
+	It("invalid Update case - NamespaceMap", func() {
+		nsMap.Update(nil)
+		Expect(nsMap).To(BeEmpty())
+	})
 
-		labelTest, ok := nsTest1.Labels["labelName2"]
-		Expect(ok).To(BeTrue())
-		Expect(labelTest).To(Equal("labelValue2"))
+	It("add ns and verify", func() {
+		Expect(nsChanges.Update(nil, ns1)).To(BeTrue())
+
+		nsMap.Update(nsChanges)
+		Expect(nsMap).To(HaveLen(1))
+		checkNsMapWithNS(ns1)
+	})
+
+	It("add ns then del ns and verify", func() {
+		Expect(nsChanges.Update(nil, ns1)).To(BeTrue())
+		Expect(nsChanges.Update(nil, ns2)).To(BeTrue())
+		Expect(nsChanges.Update(ns2, nil)).To(BeTrue())
+
+		nsMap.Update(nsChanges)
+		Expect(nsMap).To(HaveLen(1))
+		checkNsMapWithNS(ns1)
+	})
+
+	It("add ns then update ns and verify", func() {
+		updatedNs1 := newTestNamespace("test1", map[string]string{"otherLabelName": "otherLabelValue"})
+		Expect(nsChanges.Update(nil, ns1)).To(BeTrue())
+		Expect(nsChanges.Update(ns1, updatedNs1)).To(BeTrue())
+
+		nsMap.Update(nsChanges)
+		Expect(nsMap).To(HaveLen(1))
+		checkNsMapWithNS(updatedNs1)
+	})
+
+	It("add same ns as current and previous", func() {
+		Expect(nsChanges.Update(ns1, ns1)).To(BeTrue())
+		nsMap.Update(nsChanges)
+		Expect(nsMap).To(BeEmpty())
 	})
 })

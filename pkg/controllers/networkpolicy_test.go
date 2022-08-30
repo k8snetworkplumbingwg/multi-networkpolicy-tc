@@ -1,17 +1,22 @@
-package controllers
+package controllers_test
 
 import (
+	"context"
+	"sync"
 	"time"
 
 	multiv1beta1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
 	multifake "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/fake"
 	multiinformerv1beta1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/informers/externalversions"
+	"k8s.io/client-go/tools/cache"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
 )
 
 type FakeNetworkPolicyConfigStub struct {
@@ -37,15 +42,6 @@ func (f *FakeNetworkPolicyConfigStub) OnPolicySynced() {
 	f.CounterSynced++
 }
 
-func NewFakeNetworkPolicyConfig(stub *FakeNetworkPolicyConfigStub) *NetworkPolicyConfig {
-	configSync := 15 * time.Minute
-	fakeClient := multifake.NewSimpleClientset()
-	informerFactory := multiinformerv1beta1.NewSharedInformerFactoryWithOptions(fakeClient, configSync)
-	policyConfig := NewNetworkPolicyConfig(informerFactory.K8sCniCncfIo().V1beta1().MultiNetworkPolicies(), configSync)
-	policyConfig.RegisterEventHandler(stub)
-	return policyConfig
-}
-
 func NewNetworkPolicy(namespace, name string) *multiv1beta1.MultiNetworkPolicy {
 	return &multiv1beta1.MultiNetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
@@ -56,101 +52,158 @@ func NewNetworkPolicy(namespace, name string) *multiv1beta1.MultiNetworkPolicy {
 }
 
 var _ = Describe("networkpolicy config", func() {
+	configSync := 15 * time.Minute
+	var wg sync.WaitGroup
+	var stopCtx context.Context
+	var stopFunc context.CancelFunc
+	var fakeClient *multifake.Clientset
+	var informerFactory multiinformerv1beta1.SharedInformerFactory
+	var stub *FakeNetworkPolicyConfigStub
+	var netPolConfig *controllers.NetworkPolicyConfig
+	var mnp *multiv1beta1.MultiNetworkPolicy
+
+	BeforeEach(func() {
+		wg = sync.WaitGroup{}
+		stopCtx, stopFunc = context.WithCancel(context.Background())
+		fakeClient = multifake.NewSimpleClientset()
+		informerFactory = multiinformerv1beta1.NewSharedInformerFactory(fakeClient, configSync)
+		multiNetInformer := informerFactory.K8sCniCncfIo().V1beta1().MultiNetworkPolicies()
+		netPolConfig = controllers.NewNetworkPolicyConfig(multiNetInformer, configSync)
+		stub = &FakeNetworkPolicyConfigStub{}
+		mnp = NewNetworkPolicy("testns1", "test1")
+
+		netPolConfig.RegisterEventHandler(stub)
+		informerFactory.Start(stopCtx.Done())
+
+		wg.Add(1)
+		go func() {
+			netPolConfig.Run(stopCtx.Done())
+			wg.Done()
+		}()
+
+		cacheSyncCtx, cfn := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cfn()
+		Expect(cache.WaitForCacheSync(cacheSyncCtx.Done(), multiNetInformer.Informer().HasSynced)).To(BeTrue())
+	})
+
+	AfterEach(func() {
+		stopFunc()
+		wg.Wait()
+	})
+
+	It("check sync handler", func() {
+		Eventually(&stub.CounterSynced).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(0)))
+	})
+
 	It("check add handler", func() {
-		stub := &FakeNetworkPolicyConfigStub{}
-		networkPolicyConfig := NewFakeNetworkPolicyConfig(stub)
-		networkPolicyConfig.handleAddPolicy(NewNetworkPolicy("testns1", "test1"))
-		Expect(stub.CounterAdd).To(Equal(1))
-		Expect(stub.CounterUpdate).To(Equal(0))
-		Expect(stub.CounterDelete).To(Equal(0))
-		Expect(stub.CounterSynced).To(Equal(0))
+		_, err := fakeClient.K8sCniCncfIoV1beta1().MultiNetworkPolicies(mnp.Namespace).Create(
+			context.Background(), mnp, metav1.CreateOptions{})
+
+		Expect(err).ToNot(HaveOccurred())
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(0)))
 	})
 
 	It("check update handler", func() {
-		stub := &FakeNetworkPolicyConfigStub{}
-		networkPolicyConfig := NewFakeNetworkPolicyConfig(stub)
-		networkPolicyConfig.handleUpdatePolicy(
-			NewNetworkPolicy("testns1", "test1"),
-			NewNetworkPolicy("testns2", "test1"))
-		Expect(stub.CounterAdd).To(Equal(0))
-		Expect(stub.CounterUpdate).To(Equal(1))
-		Expect(stub.CounterDelete).To(Equal(0))
-		Expect(stub.CounterSynced).To(Equal(0))
+		p, err := fakeClient.K8sCniCncfIoV1beta1().MultiNetworkPolicies(mnp.Namespace).Create(
+			context.Background(), mnp, metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		p.Labels = map[string]string{"my": "label"}
+		_, err = fakeClient.K8sCniCncfIoV1beta1().MultiNetworkPolicies(mnp.Namespace).Update(
+			context.Background(), p, metav1.UpdateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(0)))
 	})
 
 	It("check delete handler", func() {
-		stub := &FakeNetworkPolicyConfigStub{}
-		networkPolicyConfig := NewFakeNetworkPolicyConfig(stub)
-		networkPolicyConfig.handleDeletePolicy(NewNetworkPolicy("testns1", "test1"))
-		Expect(stub.CounterAdd).To(Equal(0))
-		Expect(stub.CounterUpdate).To(Equal(0))
-		Expect(stub.CounterDelete).To(Equal(1))
-		Expect(stub.CounterSynced).To(Equal(0))
+		p, err := fakeClient.K8sCniCncfIoV1beta1().MultiNetworkPolicies(mnp.Namespace).Create(
+			context.Background(), mnp, metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		err = fakeClient.K8sCniCncfIoV1beta1().MultiNetworkPolicies(mnp.Namespace).Delete(
+			context.Background(), p.Name, metav1.DeleteOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(1)))
 	})
 })
 
 var _ = Describe("networkpolicy controller", func() {
-	It("Initialize and verify empty", func() {
-		policyChanges := NewPolicyChangeTracker()
-		policyMap := make(PolicyMap)
-		policyMap.Update(policyChanges)
-		Expect(len(policyMap)).To(Equal(0))
+	var policyChanges *controllers.PolicyChangeTracker
+	var policyMap controllers.PolicyMap
+	var policy1, policy2 *multiv1beta1.MultiNetworkPolicy
+
+	BeforeEach(func() {
+		policyChanges = controllers.NewPolicyChangeTracker()
+		policyMap = make(controllers.PolicyMap)
+		policy1 = NewNetworkPolicy("testns1", "test1")
+		policy2 = NewNetworkPolicy("testns2", "test2")
 	})
 
-	It("Add policy and verify", func() {
-		policyChanges := NewPolicyChangeTracker()
-		policyChanges.Update(nil, NewNetworkPolicy("testns1", "test1"))
-		policyChanges.Update(nil, NewNetworkPolicy("testns2", "test2"))
+	nsName := func(np *multiv1beta1.MultiNetworkPolicy) types.NamespacedName {
+		return types.NamespacedName{Namespace: np.Namespace, Name: np.Name}
+	}
 
-		policyMap := make(PolicyMap)
-		policyMap.Update(policyChanges)
-		Expect(len(policyMap)).To(Equal(2))
+	checkPolicyMapWithPolicy := func(policy *multiv1beta1.MultiNetworkPolicy) {
+		policyTest, ok := policyMap[nsName(policy)]
+		ExpectWithOffset(1, ok).To(BeTrue())
+		ExpectWithOffset(1, policyTest.Name()).To(Equal(policy.Name))
+		ExpectWithOffset(1, policyTest.Namespace()).To(Equal(policy.Namespace))
+		ExpectWithOffset(1, policyTest.Policy).To(BeEquivalentTo(policy))
+	}
 
-		policyTest1, ok := policyMap[types.NamespacedName{Namespace: "testns1", Name: "test1"}]
-		Expect(ok).To(BeTrue())
-		Expect(policyTest1.Name()).To(Equal("test1"))
-		Expect(policyTest1.Namespace()).To(Equal("testns1"))
-		policyTest2, ok := policyMap[types.NamespacedName{Namespace: "testns2", Name: "test2"}]
-		Expect(ok).To(BeTrue())
-		Expect(policyTest2.Name()).To(Equal("test2"))
-		Expect(policyTest2.Namespace()).To(Equal("testns2"))
-	})
-
-	It("Add policy then delete it and verify", func() {
-		policyChanges := NewPolicyChangeTracker()
-		policyChanges.Update(nil, NewNetworkPolicy("testns1", "test1"))
-		policyChanges.Update(nil, NewNetworkPolicy("testns2", "test2"))
-		policyChanges.Update(NewNetworkPolicy("testns1", "test1"), nil)
-
-		policyMap := make(PolicyMap)
-		policyMap.Update(policyChanges)
-		Expect(len(policyMap)).To(Equal(1))
-
-		policyTest2, ok := policyMap[types.NamespacedName{Namespace: "testns2", Name: "test2"}]
-		Expect(ok).To(BeTrue())
-		Expect(policyTest2.Name()).To(Equal("test2"))
-		Expect(policyTest2.Namespace()).To(Equal("testns2"))
-	})
-
-	It("invalid Update case", func() {
-		policyChanges := NewPolicyChangeTracker()
+	It("invalid Update case both nil - NetDefChangeTracker", func() {
 		Expect(policyChanges.Update(nil, nil)).To(BeFalse())
 	})
 
-	It("Add policy then update it and verify", func() {
-		policyChanges := NewPolicyChangeTracker()
-		policyChanges.Update(nil, NewNetworkPolicy("testns1", "test1"))
-		policyChanges.Update(
-			NewNetworkPolicy("testns1", "test1"),
-			NewNetworkPolicy("testns1", "test1"))
+	It("invalid Update case - NetDefMap", func() {
+		policyMap.Update(nil)
+		Expect(policyMap).To(BeEmpty())
+	})
 
-		policyMap := make(PolicyMap)
+	It("empty update - NetDefMap", func() {
 		policyMap.Update(policyChanges)
-		Expect(len(policyMap)).To(Equal(1))
+		Expect(policyMap).To(BeEmpty())
+	})
 
-		policyTest1, ok := policyMap[types.NamespacedName{Namespace: "testns1", Name: "test1"}]
-		Expect(ok).To(BeTrue())
-		Expect(policyTest1.Name()).To(Equal("test1"))
-		Expect(policyTest1.Namespace()).To(Equal("testns1"))
+	It("Add policy and verify", func() {
+		Expect(policyChanges.Update(nil, policy1)).To(BeTrue())
+		Expect(policyChanges.Update(nil, policy2)).To(BeTrue())
+
+		policyMap.Update(policyChanges)
+		Expect(policyMap).To(HaveLen(2))
+		checkPolicyMapWithPolicy(policy1)
+		checkPolicyMapWithPolicy(policy2)
+	})
+
+	It("Add policy then delete it and verify", func() {
+		Expect(policyChanges.Update(nil, policy1)).To(BeTrue())
+		Expect(policyChanges.Update(nil, policy2)).To(BeTrue())
+		Expect(policyChanges.Update(policy1, nil)).To(BeTrue())
+
+		policyMap.Update(policyChanges)
+		Expect(policyMap).To(HaveLen(1))
+		checkPolicyMapWithPolicy(policy2)
+	})
+
+	It("Add policy then update it and verify", func() {
+		Expect(policyChanges.Update(nil, policy1)).To(BeTrue())
+		updatedPolicy := NewNetworkPolicy("testns1", "test1")
+		updatedPolicy.Spec.PolicyTypes = []multiv1beta1.MultiPolicyType{multiv1beta1.PolicyTypeEgress}
+		Expect(policyChanges.Update(policy1, updatedPolicy)).To(BeTrue())
+
+		policyMap.Update(policyChanges)
+		Expect(policyMap).To(HaveLen(1))
+		checkPolicyMapWithPolicy(updatedPolicy)
 	})
 })
