@@ -275,7 +275,7 @@ func (pct *PolicyChangeTracker) Update(previous, current *multiv1beta1.MultiNetw
 		delete(pct.items, namespacedName)
 	}
 
-	return len(pct.items) >= 0
+	return true
 }
 
 // NewPolicyChangeTracker creates a new instance of PolicyChangeTracker

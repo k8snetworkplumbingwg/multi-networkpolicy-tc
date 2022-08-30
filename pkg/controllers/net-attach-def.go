@@ -296,7 +296,7 @@ func (ndt *NetDefChangeTracker) Update(previous, current *netdefv1.NetworkAttach
 		delete(ndt.items, namespacedName)
 	}
 
-	return len(ndt.items) >= 0
+	return true
 }
 
 // NewNetDefChangeTracker creates a new instance of NetDefChangeTracker

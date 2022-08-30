@@ -198,7 +198,7 @@ func (nct *NamespaceChangeTracker) Update(previous, current *v1.Namespace) bool 
 	if reflect.DeepEqual(change.previous, change.current) {
 		delete(nct.items, ns.Name)
 	}
-	return len(nct.items) >= 0
+	return true
 }
 
 // NamespaceMap maps Namespace name to NamespaceInfo
