@@ -1,7 +1,9 @@
-package controllers
+package controllers_test
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	netdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
@@ -10,9 +12,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/cache"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
 )
 
 type FakePodConfigStub struct {
@@ -38,23 +43,14 @@ func (f *FakePodConfigStub) OnPodSynced() {
 	f.CounterSynced++
 }
 
-func NewFakePodConfig(stub *FakePodConfigStub) *PodConfig {
-	configSync := 15 * time.Minute
-	fakeClient := fake.NewSimpleClientset()
-	informerFactory := informers.NewSharedInformerFactoryWithOptions(fakeClient, configSync)
-	podConfig := NewPodConfig(informerFactory.Core().V1().Pods(), configSync)
-	podConfig.RegisterEventHandler(stub)
-	return podConfig
-}
-
-func NewFakePodWithNetAnnotation(namespace, name, annot, status string) *v1.Pod {
+func NewFakePodWithNetAnnotation(namespace, name, networks, status string) *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      name,
 			UID:       "testUID",
 			Annotations: map[string]string{
-				"k8s.v1.cni.cncf.io/networks": annot,
+				"k8s.v1.cni.cncf.io/networks": networks,
 				netdefv1.NetworkStatusAnnot:   status,
 			},
 		},
@@ -72,7 +68,8 @@ func NewFakePodWithNetAnnotation(namespace, name, annot, status string) *v1.Pod 
 
 func NewFakeNetworkStatus(netns, netname string) string {
 	baseStr := `
-	[{
+	[
+		{
             "name": "",
             "interface": "eth0",
             "ips": [
@@ -96,7 +93,23 @@ func NewFakeNetworkStatus(netns, netname string) string {
 					"pci-address": "0000:03:00.2"
 				}
 			}
-        }]
+		},{
+			"name": "some-other-network",
+			"interface": "net2",
+			"ips": [
+           		"20.1.1.101"
+			],
+			"mac": "42:90:65:12:3e:bf",
+			"dns": {},
+			"device-info": {
+				"type": "pci",
+				"version": "1.0.0",
+				"pci": {
+					"pci-address": "0000:03:00.3"
+				}
+			}
+        }
+]
 `
 	return fmt.Sprintf(baseStr, netns, netname)
 }
@@ -119,139 +132,210 @@ func NewFakePod(namespace, name string) *v1.Pod {
 	}
 }
 
-func NewFakePodChangeTracker(ndt *NetDefChangeTracker) *PodChangeTracker {
-	return &PodChangeTracker{
-		items:          make(map[types.NamespacedName]*podChange),
-		netdefChanges:  ndt,
-		networkPlugins: []string{"accelerated-bridge"},
-	}
-}
-
 var _ = Describe("pod config", func() {
+	configSync := 15 * time.Minute
+	var wg sync.WaitGroup
+	var stopCtx context.Context
+	var stopFunc context.CancelFunc
+	var fakeClient *fake.Clientset
+	var informerFactory informers.SharedInformerFactory
+	var stub *FakePodConfigStub
+	var podConfig *controllers.PodConfig
+	var testPod1 *v1.Pod
+
+	BeforeEach(func() {
+		wg = sync.WaitGroup{}
+		stopCtx, stopFunc = context.WithCancel(context.Background())
+		fakeClient = fake.NewSimpleClientset()
+		informerFactory = informers.NewSharedInformerFactory(fakeClient, configSync)
+		podInformer := informerFactory.Core().V1().Pods()
+		podConfig = controllers.NewPodConfig(podInformer, configSync)
+		stub = &FakePodConfigStub{}
+		testPod1 = NewFakePod("testns1", "pod1")
+
+		podConfig.RegisterEventHandler(stub)
+		informerFactory.Start(stopCtx.Done())
+
+		wg.Add(1)
+		go func() {
+			podConfig.Run(stopCtx.Done())
+			wg.Done()
+		}()
+
+		cacheSyncCtx, cfn := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cfn()
+		Expect(cache.WaitForCacheSync(cacheSyncCtx.Done(), podInformer.Informer().HasSynced)).To(BeTrue())
+	})
+
+	AfterEach(func() {
+		stopFunc()
+		wg.Wait()
+	})
+
+	It("check sync handler", func() {
+		Eventually(&stub.CounterSynced).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(0)))
+	})
+
 	It("check add handler", func() {
-		stub := &FakePodConfigStub{}
-		nsConfig := NewFakePodConfig(stub)
-		nsConfig.handleAddPod(NewFakePod("testns1", "pod"))
-		Expect(stub.CounterAdd).To(Equal(1))
-		Expect(stub.CounterUpdate).To(Equal(0))
-		Expect(stub.CounterDelete).To(Equal(0))
-		Expect(stub.CounterSynced).To(Equal(0))
+		_, err := fakeClient.CoreV1().Pods(testPod1.Namespace).Create(
+			context.Background(), testPod1, metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(0)))
 	})
 
 	It("check update handler", func() {
-		stub := &FakePodConfigStub{}
-		nsConfig := NewFakePodConfig(stub)
-		nsConfig.handleUpdatePod(NewFakePod("testns1", "pod"), NewFakePod("testns2", "pod"))
-		Expect(stub.CounterAdd).To(Equal(0))
-		Expect(stub.CounterUpdate).To(Equal(1))
-		Expect(stub.CounterDelete).To(Equal(0))
-		Expect(stub.CounterSynced).To(Equal(0))
+		p, err := fakeClient.CoreV1().Pods(testPod1.Namespace).Create(
+			context.Background(), testPod1, metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		p.Labels = map[string]string{"my": "label"}
+		_, err = fakeClient.CoreV1().Pods(p.Namespace).Update(
+			context.Background(), p, metav1.UpdateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(0)))
 	})
 
-	It("check update handler", func() {
-		stub := &FakePodConfigStub{}
-		nsConfig := NewFakePodConfig(stub)
-		nsConfig.handleDeletePod(NewFakePod("testns1", "pod"))
-		Expect(stub.CounterAdd).To(Equal(0))
-		Expect(stub.CounterUpdate).To(Equal(0))
-		Expect(stub.CounterDelete).To(Equal(1))
-		Expect(stub.CounterSynced).To(Equal(0))
+	It("check delete handler", func() {
+		p, err := fakeClient.CoreV1().Pods(testPod1.Namespace).Create(
+			context.Background(), testPod1, metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		err = fakeClient.CoreV1().Pods(p.Namespace).Delete(
+			context.Background(), p.Name, metav1.DeleteOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(1)))
+		Eventually(&stub.CounterUpdate).Should(HaveValue(Equal(0)))
+		Eventually(&stub.CounterDelete).Should(HaveValue(Equal(1)))
 	})
 })
 
-var _ = Describe("pod controller", func() {
-	It("Initialize and verify empty", func() {
-		ndChanges := NewNetDefChangeTracker()
-		podChanges := NewFakePodChangeTracker(ndChanges)
-		podMap := make(PodMap)
-		podMap.Update(podChanges)
-		Expect(len(podMap)).To(Equal(0))
+var _ = Describe("pod change tracker", func() {
+	var ndChanges *controllers.NetDefChangeTracker
+	var podChanges *controllers.PodChangeTracker
+	var podMap controllers.PodMap
+
+	nsName := func(p *v1.Pod) types.NamespacedName {
+		return types.NamespacedName{Namespace: p.Namespace, Name: p.Name}
+	}
+
+	checkPodInfo := func(p *v1.Pod, numOfInterfaces int) {
+		testPodInfo, ok := podMap[nsName(p)]
+		ExpectWithOffset(1, ok).To(BeTrue())
+		ExpectWithOffset(1, testPodInfo.Name).To(Equal(p.Name))
+		ExpectWithOffset(1, testPodInfo.Namespace).To(Equal(p.Namespace))
+		ExpectWithOffset(1, testPodInfo.Interfaces).To(HaveLen(numOfInterfaces))
+	}
+
+	BeforeEach(func() {
+		ndChanges = controllers.NewNetDefChangeTracker()
+		podChanges = controllers.NewPodChangeTracker([]string{"accelerated-bridge"}, ndChanges)
+		podMap = make(controllers.PodMap)
 	})
 
-	It("Add pod and verify", func() {
-		ndChanges := NewNetDefChangeTracker()
-		podChanges := NewFakePodChangeTracker(ndChanges)
+	Context("basic cases", func() {
+		It("invalid Update case both nil - NetDefChangeTracker", func() {
+			Expect(podChanges.Update(nil, nil)).To(BeFalse())
+		})
 
-		Expect(podChanges.Update(nil, NewFakePod("testns1", "testpod1"))).To(BeTrue())
+		It("invalid Update case - NetDefMap", func() {
+			podMap.Update(nil)
+			Expect(podMap).To(BeEmpty())
+		})
 
-		podMap := make(PodMap)
-		podMap.Update(podChanges)
-		Expect(len(podMap)).To(Equal(1))
-
-		pod1, ok := podMap[types.NamespacedName{Namespace: "testns1", Name: "testpod1"}]
-		Expect(ok).To(BeTrue())
-		Expect(pod1.Name).To(Equal("testpod1"))
-		Expect(pod1.Namespace).To(Equal("testns1"))
+		It("empty update - NetDefMap", func() {
+			podMap.Update(podChanges)
+			Expect(podMap).To(BeEmpty())
+		})
 	})
 
-	It("Add ns then del ns and verify", func() {
-		ndChanges := NewNetDefChangeTracker()
-		podChanges := NewFakePodChangeTracker(ndChanges)
+	Context("basic pods - no secondary network and status", func() {
+		var pod1, pod2 *v1.Pod
 
-		Expect(podChanges.Update(nil, NewFakePod("testns1", "testpod1"))).To(BeTrue())
-		Expect(podChanges.Update(NewFakePod("testns1", "testpod1"), nil)).To(BeTrue())
-		Expect(podChanges.Update(nil, NewFakePod("testns2", "testpod2"))).To(BeTrue())
+		BeforeEach(func() {
+			pod1 = NewFakePod("testns1", "testpod1")
+			pod2 = NewFakePod("testns2", "testpod2")
+		})
 
-		podMap := make(PodMap)
-		podMap.Update(podChanges)
-		Expect(len(podMap)).To(Equal(1))
+		It("Add pod and verify", func() {
+			Expect(podChanges.Update(nil, pod1)).To(BeTrue())
+			podMap.Update(podChanges)
+			Expect(podMap).To(HaveLen(1))
+			checkPodInfo(pod1, 0)
+		})
 
-		pod1, ok := podMap[types.NamespacedName{Namespace: "testns2", Name: "testpod2"}]
-		Expect(ok).To(BeTrue())
-		Expect(pod1.Name).To(Equal("testpod2"))
-		Expect(pod1.Namespace).To(Equal("testns2"))
+		It("Add ns then del ns and verify", func() {
+			Expect(podChanges.Update(nil, pod1)).To(BeTrue())
+			Expect(podChanges.Update(nil, pod2)).To(BeTrue())
+			Expect(podChanges.Update(pod1, nil)).To(BeTrue())
+
+			podMap.Update(podChanges)
+			Expect(podMap).To(HaveLen(1))
+			checkPodInfo(pod2, 0)
+		})
+
+		It("Add ns then update ns and verify", func() {
+			podWithLables := NewFakePod("testns1", "testpod1")
+			podWithLables.Labels = map[string]string{"Some": "Label"}
+
+			Expect(podChanges.Update(nil, pod1)).To(BeTrue())
+			Expect(podChanges.Update(pod1, podWithLables)).To(BeTrue())
+
+			podMap.Update(podChanges)
+			Expect(podMap).To(HaveLen(1))
+			checkPodInfo(podWithLables, 0)
+		})
 	})
 
-	It("invalid Update case", func() {
-		ndChanges := NewNetDefChangeTracker()
-		podChanges := NewFakePodChangeTracker(ndChanges)
-		Expect(podChanges.Update(nil, nil)).To(BeFalse())
+	Context("pods with networks", func() {
+		BeforeEach(func() {
+			Expect(ndChanges.Update(
+				nil, NewNetDef("testns1", "net-attach1", NewCNIConfig(
+					"testCNI", "accelerated-bridge")))).To(BeTrue())
+
+		})
+
+		It("Add pod with net-attach annotation and status", func() {
+			podWithNeworkAndStatus := NewFakePodWithNetAnnotation("testns1", "testpod1",
+				"net-attach1", NewFakeNetworkStatus("testns1", "net-attach1"))
+			Expect(podChanges.Update(nil, podWithNeworkAndStatus)).To(BeTrue())
+			podMap.Update(podChanges)
+			Expect(podMap).To(HaveLen(1))
+
+			checkPodInfo(podWithNeworkAndStatus, 1)
+
+			// Check interface
+			pInfo := podMap[nsName(podWithNeworkAndStatus)]
+			Expect(pInfo.Interfaces[0].DeviceID).To(Equal("0000:03:00.2"))
+			Expect(pInfo.Interfaces[0].InterfaceType).To(Equal("accelerated-bridge"))
+			Expect(pInfo.Interfaces[0].InterfaceName).To(Equal("net1"))
+			Expect(pInfo.Interfaces[0].IPs).To(BeEquivalentTo([]string{"10.1.1.101"}))
+			Expect(pInfo.Interfaces[0].NetattachName).To(Equal("testns1/net-attach1"))
+		})
+
+		It("Add pod with net-attach annotation no status", func() {
+			podWitoutNeworkStatus := NewFakePodWithNetAnnotation("testns1", "testpod1", "net-attach1", "")
+			Expect(podChanges.Update(nil, podWitoutNeworkStatus)).To(BeTrue())
+			podMap.Update(podChanges)
+			Expect(podMap).To(HaveLen(1))
+			checkPodInfo(podWitoutNeworkStatus, 0)
+
+			podWithNeworkAndStatus := NewFakePodWithNetAnnotation("testns1", "testpod1",
+				"net-attach1", NewFakeNetworkStatus("testns1", "net-attach1"))
+			Expect(podChanges.Update(podWitoutNeworkStatus, podWithNeworkAndStatus)).To(BeTrue())
+
+			podMap.Update(podChanges)
+			Expect(podMap).To(HaveLen(1))
+			checkPodInfo(podWithNeworkAndStatus, 1)
+		})
 	})
-
-	It("Add pod with net-attach annotation and status", func() {
-		ndChanges := NewNetDefChangeTracker()
-		podChanges := NewFakePodChangeTracker(ndChanges)
-
-		Expect(ndChanges.Update(nil, NewNetDef("testns1", "net-attach1", NewCNIConfig("testCNI", "accelerated-bridge")))).To(BeTrue())
-
-		Expect(podChanges.Update(nil, NewFakePodWithNetAnnotation("testns1", "testpod1", "net-attach1", NewFakeNetworkStatus("testns1", "net-attach1")))).To(BeTrue())
-		podMap := make(PodMap)
-		podMap.Update(podChanges)
-		Expect(len(podMap)).To(Equal(1))
-
-		pod1, ok := podMap[types.NamespacedName{Namespace: "testns1", Name: "testpod1"}]
-		Expect(ok).To(BeTrue())
-		Expect(pod1.Name).To(Equal("testpod1"))
-		Expect(pod1.Namespace).To(Equal("testns1"))
-		Expect(len(pod1.Interfaces)).To(Equal(1))
-	})
-
-	It("Add pod with net-attach annotation no status", func() {
-		ndChanges := NewNetDefChangeTracker()
-		podChanges := NewFakePodChangeTracker(ndChanges)
-
-		Expect(ndChanges.Update(nil, NewNetDef("testns1", "net-attach1", NewCNIConfig("testCNI", "accelerated-bridge")))).To(BeTrue())
-		Expect(podChanges.Update(nil, NewFakePod("testns1", "testpod1"))).To(BeTrue())
-		podMap := make(PodMap)
-		podMap.Update(podChanges)
-		Expect(len(podMap)).To(Equal(1))
-
-		pod1, ok := podMap[types.NamespacedName{Namespace: "testns1", Name: "testpod1"}]
-		Expect(ok).To(BeTrue())
-		Expect(pod1.Name).To(Equal("testpod1"))
-		Expect(pod1.Namespace).To(Equal("testns1"))
-		Expect(len(pod1.Interfaces)).To(Equal(0))
-
-		Expect(podChanges.Update(NewFakePod("testns1", "testpod1"), NewFakePodWithNetAnnotation("testns1", "testpod1", "net-attach1", NewFakeNetworkStatus("testns1", "net-attach1")))).To(BeTrue())
-
-		podMap.Update(podChanges)
-		Expect(len(podMap)).To(Equal(1))
-
-		pod2, ok := podMap[types.NamespacedName{Namespace: "testns1", Name: "testpod1"}]
-		Expect(ok).To(BeTrue())
-		Expect(pod2.Name).To(Equal("testpod1"))
-		Expect(pod2.Namespace).To(Equal("testns1"))
-		Expect(len(pod2.Interfaces)).To(Equal(1))
-	})
-
 })
