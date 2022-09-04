@@ -89,9 +89,10 @@ type Server struct {
 
 	syncRunner *async.BoundedFrequencyRunner
 
-	policyRuleRenderer policyrules.Renderer
-	tcRuleGenerator    tc.TCGenerator
-	sriovnetProvider   netwrappers.SriovnetProvider
+	policyRuleRenderer      policyrules.Renderer
+	tcRuleGenerator         tc.TCGenerator
+	sriovnetProvider        netwrappers.SriovnetProvider
+	createActuatorFromRepFn func(string) tc.Actuator
 }
 
 func (s *Server) RunPodConfig(ctx context.Context) {
@@ -192,7 +193,9 @@ func (s *Server) SyncLoop(ctx context.Context) {
 func NewServer(o *Options) (*Server, error) {
 	var kubeConfig *rest.Config
 	var err error
-	if len(o.Kubeconfig) == 0 {
+	if o.KConfig != nil {
+		kubeConfig = o.KConfig
+	} else if len(o.Kubeconfig) == 0 {
 		klog.Info("Neither kubeconfig file nor master URL was specified. Falling back to in-cluster config.")
 		kubeConfig, err = rest.InClusterConfig()
 	} else {
@@ -256,6 +259,22 @@ func NewServer(o *Options) (*Server, error) {
 	nsChanges := controllers.NewNamespaceChangeTracker()
 	podChanges := controllers.NewPodChangeTracker(o.networkPlugins, netdefChanges)
 
+	if o.policyRuleRenderer == nil {
+		o.policyRuleRenderer = policyrules.NewRendererImpl(klog.NewKlogr().WithName("policy-rule-renderer"))
+	}
+
+	if o.tcRuleGenerator == nil {
+		o.tcRuleGenerator = tc.NewSimpleTCGenerator()
+	}
+
+	if o.sriovnetProvider == nil {
+		o.sriovnetProvider = netwrappers.NewSriovnetProviderImpl()
+	}
+
+	if o.createActuatorForRep == nil {
+		o.createActuatorForRep = createActuatorForRep
+	}
+
 	server := &Server{
 		Options:             o,
 		Client:              client,
@@ -275,9 +294,10 @@ func NewServer(o *Options) (*Server, error) {
 		namespaceMap:        make(controllers.NamespaceMap),
 		startPodConfig:      make(chan struct{}),
 
-		policyRuleRenderer: policyrules.NewRendererImpl(klog.NewKlogr().WithName("policy-rule-renderer")),
-		tcRuleGenerator:    tc.NewSimpleTCGenerator(),
-		sriovnetProvider:   netwrappers.NewSriovnetProviderImpl(),
+		policyRuleRenderer:      o.policyRuleRenderer,
+		tcRuleGenerator:         o.tcRuleGenerator,
+		sriovnetProvider:        o.sriovnetProvider,
+		createActuatorFromRepFn: o.createActuatorForRep,
 	}
 	server.syncRunner = async.NewBoundedFrequencyRunner(
 		"sync-runner", server.syncMultiPolicy, minSyncPeriod, syncPeriod, burstSyncs)
@@ -526,10 +546,8 @@ func (s *Server) syncMultiPolicy() {
 			klog.V(5).Infof("tcObjs: %+v", tcObjs)
 
 			// Actuate TC rules
-			klog.V(4).Infof("apply TC rules for rep: %s", rep)
-			tcApi := driver.NewTcCmdLineImpl(
-				rep, klog.NewKlogr().WithName("tc-cmdline-driver"), exec.New())
-			actuator := tc.NewActuatorTCImpl(tcApi, klog.NewKlogr().WithName("tc-actuator"))
+			actuator := s.createActuatorFromRepFn(rep)
+
 			err = actuator.Actuate(tcObjs)
 			if err != nil {
 				klog.ErrorS(err, "Failed to actuate rules. skipping.")
@@ -616,4 +634,11 @@ func (s *Server) getRepresentor(pciAddr string) (string, error) {
 		return "", errors.Wrapf(err, "failed to get VF representor for uplink: %s vf index: %d", uplink, vfIdx)
 	}
 	return vfRep, nil
+}
+
+// createActuatorForRep creates a new tc.Actuator with provider representor netdev
+func createActuatorForRep(rep string) tc.Actuator {
+	tcApi := driver.NewTcCmdLineImpl(
+		rep, klog.NewKlogr().WithName("tc-cmdline-driver"), exec.New())
+	return tc.NewActuatorTCImpl(tcApi, klog.NewKlogr().WithName("tc-actuator"))
 }
