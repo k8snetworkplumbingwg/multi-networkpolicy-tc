@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
+	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers/testutil"
 )
 
 type FakeNamespaceConfigStub struct {
@@ -38,15 +39,6 @@ func (f *FakeNamespaceConfigStub) OnNamespaceDelete(_ *v1.Namespace) {
 
 func (f *FakeNamespaceConfigStub) OnNamespaceSynced() {
 	f.CounterSynced++
-}
-
-func newTestNamespace(name string, labels map[string]string) *v1.Namespace {
-	return &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
-		},
-	}
 }
 
 var _ = Describe("namespace config", func() {
@@ -96,7 +88,7 @@ var _ = Describe("namespace config", func() {
 
 	It("check add handler", func() {
 		_, err := fakeClient.CoreV1().Namespaces().Create(
-			context.Background(), newTestNamespace("test", nil), metav1.CreateOptions{})
+			context.Background(), testutil.NewNamespace("test", nil), metav1.CreateOptions{})
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(&stub.CounterAdd).Should(HaveValue(Equal(1)))
@@ -107,7 +99,7 @@ var _ = Describe("namespace config", func() {
 
 	It("check update handler", func() {
 		ns, err := fakeClient.CoreV1().Namespaces().Create(
-			context.Background(), newTestNamespace("test", nil), metav1.CreateOptions{})
+			context.Background(), testutil.NewNamespace("test", nil), metav1.CreateOptions{})
 		Expect(err).ToNot(HaveOccurred())
 
 		ns.Labels = map[string]string{"my": "label"}
@@ -122,7 +114,7 @@ var _ = Describe("namespace config", func() {
 
 	It("check delete handler", func() {
 		ns, err := fakeClient.CoreV1().Namespaces().Create(
-			context.Background(), newTestNamespace("test", nil), metav1.CreateOptions{})
+			context.Background(), testutil.NewNamespace("test", nil), metav1.CreateOptions{})
 		Expect(err).ToNot(HaveOccurred())
 
 		err = fakeClient.CoreV1().Namespaces().Delete(context.Background(), ns.Name, metav1.DeleteOptions{})
@@ -150,8 +142,8 @@ var _ = Describe("namespace change tracker", func() {
 	BeforeEach(func() {
 		nsChanges = controllers.NewNamespaceChangeTracker()
 		nsMap = make(controllers.NamespaceMap)
-		ns1 = newTestNamespace("test1", map[string]string{"labelName1": "labelValue1"})
-		ns2 = newTestNamespace("test2", map[string]string{"labelName2": "labelValue2"})
+		ns1 = testutil.NewNamespace("test1", map[string]string{"labelName1": "labelValue1"})
+		ns2 = testutil.NewNamespace("test2", map[string]string{"labelName2": "labelValue2"})
 	})
 
 	It("empty update", func() {
@@ -187,7 +179,7 @@ var _ = Describe("namespace change tracker", func() {
 	})
 
 	It("add ns then update ns and verify", func() {
-		updatedNs1 := newTestNamespace("test1", map[string]string{"otherLabelName": "otherLabelValue"})
+		updatedNs1 := testutil.NewNamespace("test1", map[string]string{"otherLabelName": "otherLabelValue"})
 		Expect(nsChanges.Update(nil, ns1)).To(BeTrue())
 		Expect(nsChanges.Update(ns1, updatedNs1)).To(BeTrue())
 
