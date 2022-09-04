@@ -47,7 +47,7 @@ Install MultiNetworkPolicy CRD into Kubernetes.
 ```
 $ git clone https://github.com/Mellanox/multi-networkpolicy-tc
 $ cd multi-networkpolicy-tc
-$ kubectl create -f deploy/multi-net-crd.yaml
+$ kubectl create -f deploy/crds/multi-net-crd.yaml
 customresourcedefinition.apiextensions.k8s.io/multi-networkpolicies.k8s.cni.cncf.io created
 ```
 
