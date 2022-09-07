@@ -2,7 +2,6 @@ package controllers_test
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
+	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers/testutil"
 )
 
 type FakeNetDefConfigStub struct {
@@ -43,39 +43,6 @@ func (f *FakeNetDefConfigStub) OnNetDefSynced() {
 	f.CounterSynced++
 }
 
-func NewNetDef(namespace, name, cniConfig string) *netdefv1.NetworkAttachmentDefinition {
-	return &netdefv1.NetworkAttachmentDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      name,
-		},
-		Spec: netdefv1.NetworkAttachmentDefinitionSpec{
-			Config: cniConfig,
-		},
-	}
-}
-
-func NewCNIConfig(cniName, cniType string) string {
-	cniConfigTemp := `
-	{
-		"name": "%s",
-		"type": "%s"
-	}`
-	return fmt.Sprintf(cniConfigTemp, cniName, cniType)
-}
-
-func NewCNIConfigList(cniName, cniType string) string {
-	cniConfigTemp := `
-	{
-		"name": "%s",
-		"plugins": [ 
-			{
-				"type": "%s"
-			}]
-	}`
-	return fmt.Sprintf(cniConfigTemp, cniName, cniType)
-}
-
 var _ = Describe("net-attach-def config", func() {
 	configSync := 15 * time.Minute
 	var wg sync.WaitGroup
@@ -95,7 +62,7 @@ var _ = Describe("net-attach-def config", func() {
 		netDefInformer := informerFactory.K8sCniCncfIo().V1().NetworkAttachmentDefinitions()
 		netDefConfig = controllers.NewNetDefConfig(netDefInformer, configSync)
 		stub = &FakeNetDefConfigStub{}
-		nd1 = NewNetDef("testns1", "test1", NewCNIConfig("cniConfig1", "testType1"))
+		nd1 = testutil.NewNetDef("testns1", "test1", testutil.NewCNIConfig("cniConfig1", "testType1"))
 
 		netDefConfig.RegisterEventHandler(stub)
 		informerFactory.Start(stopCtx.Done())
@@ -135,7 +102,7 @@ var _ = Describe("net-attach-def config", func() {
 			Create(context.Background(), nd1, metav1.CreateOptions{})
 		Expect(err).ToNot(HaveOccurred())
 
-		updatedNd.Spec.Config = NewCNIConfig("cniConfig2", "testType2")
+		updatedNd.Spec.Config = testutil.NewCNIConfig("cniConfig2", "testType2")
 		_, err = fakeClient.K8sCniCncfIoV1().NetworkAttachmentDefinitions(updatedNd.Namespace).
 			Update(context.Background(), updatedNd, metav1.UpdateOptions{})
 		Expect(err).ToNot(HaveOccurred())
@@ -180,8 +147,8 @@ var _ = Describe("net-attach-def change tracker", func() {
 	BeforeEach(func() {
 		ndMap = make(controllers.NetDefMap)
 		ndChanges = controllers.NewNetDefChangeTracker()
-		nd1 = NewNetDef("testns1", "test1", NewCNIConfig("cniConfig1", "testType1"))
-		nd2 = NewNetDef("testns2", "test2", NewCNIConfigList("cniConfig2", "testType2"))
+		nd1 = testutil.NewNetDef("testns1", "test1", testutil.NewCNIConfig("cniConfig1", "testType1"))
+		nd2 = testutil.NewNetDef("testns2", "test2", testutil.NewCNIConfigList("cniConfig2", "testType2"))
 	})
 
 	It("invalid Update case both nil - NetDefChangeTracker", func() {
@@ -220,7 +187,7 @@ var _ = Describe("net-attach-def change tracker", func() {
 
 	It("Add netdef then update it and verify", func() {
 		Expect(ndChanges.Update(nil, nd1)).To(BeTrue())
-		updatedNd1 := NewNetDef(nd1.Namespace, nd1.Name, NewCNIConfigList("cniConfig2", "testType2"))
+		updatedNd1 := testutil.NewNetDef(nd1.Namespace, nd1.Name, testutil.NewCNIConfigList("cniConfig2", "testType2"))
 		Expect(ndChanges.Update(nd1, updatedNd1)).To(BeTrue())
 
 		ndMap.Update(ndChanges)

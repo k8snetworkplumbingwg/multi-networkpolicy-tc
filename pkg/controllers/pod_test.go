@@ -2,11 +2,9 @@ package controllers_test
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
-	netdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -18,6 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
+	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers/testutil"
 )
 
 type FakePodConfigStub struct {
@@ -43,95 +42,6 @@ func (f *FakePodConfigStub) OnPodSynced() {
 	f.CounterSynced++
 }
 
-func NewFakePodWithNetAnnotation(namespace, name, networks, status string) *v1.Pod {
-	return &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      name,
-			UID:       "testUID",
-			Annotations: map[string]string{
-				"k8s.v1.cni.cncf.io/networks": networks,
-				netdefv1.NetworkStatusAnnot:   status,
-			},
-		},
-		Spec: v1.PodSpec{
-			NodeName: "nodeName",
-			Containers: []v1.Container{
-				{Name: "ctr1", Image: "image"},
-			},
-		},
-		Status: v1.PodStatus{
-			Phase: v1.PodRunning,
-		},
-	}
-}
-
-func NewFakeNetworkStatus(netns, netname string) string {
-	baseStr := `
-	[
-		{
-            "name": "",
-            "interface": "eth0",
-            "ips": [
-                "10.244.1.4"
-            ],
-            "mac": "aa:e1:20:71:15:01",
-            "default": true,
-            "dns": {}
-        },{
-            "name": "%s/%s",
-            "interface": "net1",
-            "ips": [
-                "10.1.1.101"
-            ],
-            "mac": "42:90:65:12:3e:bf",
-            "dns": {},
-			"device-info": {
-				"type": "pci",
-				"version": "1.0.0",
-				"pci": {
-					"pci-address": "0000:03:00.2"
-				}
-			}
-		},{
-			"name": "some-other-network",
-			"interface": "net2",
-			"ips": [
-           		"20.1.1.101"
-			],
-			"mac": "42:90:65:12:3e:bf",
-			"dns": {},
-			"device-info": {
-				"type": "pci",
-				"version": "1.0.0",
-				"pci": {
-					"pci-address": "0000:03:00.3"
-				}
-			}
-        }
-]
-`
-	return fmt.Sprintf(baseStr, netns, netname)
-}
-
-func NewFakePod(namespace, name string) *v1.Pod {
-	return &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      name,
-			UID:       "testUID",
-		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				{Name: "ctr1", Image: "image"},
-			},
-		},
-		Status: v1.PodStatus{
-			Phase: v1.PodRunning,
-		},
-	}
-}
-
 var _ = Describe("pod config", func() {
 	configSync := 15 * time.Minute
 	var wg sync.WaitGroup
@@ -151,7 +61,7 @@ var _ = Describe("pod config", func() {
 		podInformer := informerFactory.Core().V1().Pods()
 		podConfig = controllers.NewPodConfig(podInformer, configSync)
 		stub = &FakePodConfigStub{}
-		testPod1 = NewFakePod("testns1", "pod1")
+		testPod1 = testutil.NewFakePod("testns1", "pod1")
 
 		podConfig.RegisterEventHandler(stub)
 		informerFactory.Start(stopCtx.Done())
@@ -262,8 +172,8 @@ var _ = Describe("pod change tracker", func() {
 		var pod1, pod2 *v1.Pod
 
 		BeforeEach(func() {
-			pod1 = NewFakePod("testns1", "testpod1")
-			pod2 = NewFakePod("testns2", "testpod2")
+			pod1 = testutil.NewFakePod("testns1", "testpod1")
+			pod2 = testutil.NewFakePod("testns2", "testpod2")
 		})
 
 		It("Add pod and verify", func() {
@@ -284,7 +194,7 @@ var _ = Describe("pod change tracker", func() {
 		})
 
 		It("Add ns then update ns and verify", func() {
-			podWithLables := NewFakePod("testns1", "testpod1")
+			podWithLables := testutil.NewFakePod("testns1", "testpod1")
 			podWithLables.Labels = map[string]string{"Some": "Label"}
 
 			Expect(podChanges.Update(nil, pod1)).To(BeTrue())
@@ -299,14 +209,14 @@ var _ = Describe("pod change tracker", func() {
 	Context("pods with networks", func() {
 		BeforeEach(func() {
 			Expect(ndChanges.Update(
-				nil, NewNetDef("testns1", "net-attach1", NewCNIConfig(
+				nil, testutil.NewNetDef("testns1", "net-attach1", testutil.NewCNIConfig(
 					"testCNI", "accelerated-bridge")))).To(BeTrue())
 
 		})
 
 		It("Add pod with net-attach annotation and status", func() {
-			podWithNeworkAndStatus := NewFakePodWithNetAnnotation("testns1", "testpod1",
-				"net-attach1", NewFakeNetworkStatus("testns1", "net-attach1"))
+			podWithNeworkAndStatus := testutil.NewFakePodWithNetAnnotation("testns1", "testpod1",
+				"net-attach1", testutil.NewFakeNetworkStatus("testns1", "net-attach1"))
 			Expect(podChanges.Update(nil, podWithNeworkAndStatus)).To(BeTrue())
 			podMap.Update(podChanges)
 			Expect(podMap).To(HaveLen(1))
@@ -323,14 +233,15 @@ var _ = Describe("pod change tracker", func() {
 		})
 
 		It("Add pod with net-attach annotation no status", func() {
-			podWitoutNeworkStatus := NewFakePodWithNetAnnotation("testns1", "testpod1", "net-attach1", "")
+			podWitoutNeworkStatus := testutil.NewFakePodWithNetAnnotation(
+				"testns1", "testpod1", "net-attach1", "")
 			Expect(podChanges.Update(nil, podWitoutNeworkStatus)).To(BeTrue())
 			podMap.Update(podChanges)
 			Expect(podMap).To(HaveLen(1))
 			checkPodInfo(podWitoutNeworkStatus, 0)
 
-			podWithNeworkAndStatus := NewFakePodWithNetAnnotation("testns1", "testpod1",
-				"net-attach1", NewFakeNetworkStatus("testns1", "net-attach1"))
+			podWithNeworkAndStatus := testutil.NewFakePodWithNetAnnotation("testns1", "testpod1",
+				"net-attach1", testutil.NewFakeNetworkStatus("testns1", "net-attach1"))
 			Expect(podChanges.Update(podWitoutNeworkStatus, podWithNeworkAndStatus)).To(BeTrue())
 
 			podMap.Update(podChanges)

@@ -4,18 +4,31 @@ import (
 	"flag"
 
 	"github.com/spf13/pflag"
+	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
+
+	netwrappers "github.com/Mellanox/multi-networkpolicy-tc/pkg/net"
+	"github.com/Mellanox/multi-networkpolicy-tc/pkg/policyrules"
+	"github.com/Mellanox/multi-networkpolicy-tc/pkg/tc"
 )
 
 // Options stores option for the command
 type Options struct {
 	// kubeconfig is the path to a KubeConfig file.
 	Kubeconfig string
+	// KConfig points to a k8s API config, takes precedence over Kubeconfig
+	KConfig *rest.Config
 	// master is used to override the kubeconfig's URL to the apiserver
 	master           string
 	hostnameOverride string
 	networkPlugins   []string
 	podRulesPath     string
+
+	// used for testing purposes, leave empty otherwise
+	createActuatorForRep func(string) tc.Actuator
+	policyRuleRenderer   policyrules.Renderer
+	tcRuleGenerator      tc.TCGenerator
+	sriovnetProvider     netwrappers.SriovnetProvider
 }
 
 // AddFlags adds command line flags into command

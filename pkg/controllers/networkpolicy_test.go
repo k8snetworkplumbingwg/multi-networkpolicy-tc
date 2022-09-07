@@ -17,6 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
+	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers/testutil"
 )
 
 type FakeNetworkPolicyConfigStub struct {
@@ -42,15 +43,6 @@ func (f *FakeNetworkPolicyConfigStub) OnPolicySynced() {
 	f.CounterSynced++
 }
 
-func NewNetworkPolicy(namespace, name string) *multiv1beta1.MultiNetworkPolicy {
-	return &multiv1beta1.MultiNetworkPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      name,
-		},
-	}
-}
-
 var _ = Describe("networkpolicy config", func() {
 	configSync := 15 * time.Minute
 	var wg sync.WaitGroup
@@ -70,7 +62,7 @@ var _ = Describe("networkpolicy config", func() {
 		multiNetInformer := informerFactory.K8sCniCncfIo().V1beta1().MultiNetworkPolicies()
 		netPolConfig = controllers.NewNetworkPolicyConfig(multiNetInformer, configSync)
 		stub = &FakeNetworkPolicyConfigStub{}
-		mnp = NewNetworkPolicy("testns1", "test1")
+		mnp = testutil.NewNetworkPolicy("testns1", "test1")
 
 		netPolConfig.RegisterEventHandler(stub)
 		informerFactory.Start(stopCtx.Done())
@@ -146,8 +138,8 @@ var _ = Describe("networkpolicy controller", func() {
 	BeforeEach(func() {
 		policyChanges = controllers.NewPolicyChangeTracker()
 		policyMap = make(controllers.PolicyMap)
-		policy1 = NewNetworkPolicy("testns1", "test1")
-		policy2 = NewNetworkPolicy("testns2", "test2")
+		policy1 = testutil.NewNetworkPolicy("testns1", "test1")
+		policy2 = testutil.NewNetworkPolicy("testns2", "test2")
 	})
 
 	nsName := func(np *multiv1beta1.MultiNetworkPolicy) types.NamespacedName {
@@ -198,7 +190,7 @@ var _ = Describe("networkpolicy controller", func() {
 
 	It("Add policy then update it and verify", func() {
 		Expect(policyChanges.Update(nil, policy1)).To(BeTrue())
-		updatedPolicy := NewNetworkPolicy("testns1", "test1")
+		updatedPolicy := testutil.NewNetworkPolicy("testns1", "test1")
 		updatedPolicy.Spec.PolicyTypes = []multiv1beta1.MultiPolicyType{multiv1beta1.PolicyTypeEgress}
 		Expect(policyChanges.Update(policy1, updatedPolicy)).To(BeTrue())
 
