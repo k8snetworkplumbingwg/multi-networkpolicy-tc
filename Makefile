@@ -1,11 +1,16 @@
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
-SHELL = /usr/bin/env bash -o pipefail
-.SHELLFLAGS = -ec
+SHELL := /usr/bin/env bash -o pipefail
+.SHELLFLAGS := -ec
 
 # General Project parameters
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+BUILD_DIR := $(PROJECT_DIR)/build
+BIN_DIR := $(PROJECT_DIR)/bin
+COVERAGE_DIR := $(BUILD_DIR)/coverage
+PKGS := $(shell cd $(PROJECT_DIR) && env GOPATH=$(GOPATH) go list ./... | grep -v mocks)
+TESTPKGS := $(shell go list -f '{{ if or .TestGoFiles .XTestGoFiles }}{{ .ImportPath }}{{ end }}' $(PKGS))
 
 # Image related parameters, used when building image
 IMAGE_REPOSITORY ?= nvidia.com
@@ -15,9 +20,9 @@ IMG ?= $(IMAGE_REPOSITORY)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
-GOBIN=$(shell go env GOPATH)/bin
+GOBIN := $(shell go env GOPATH)/bin
 else
-GOBIN=$(shell go env GOBIN)
+GOBIN := $(shell go env GOBIN)
 endif
 
 TARGET_OS ?= $(shell go env GOOS)
@@ -29,12 +34,15 @@ GO_BUILD_OPTS ?= CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH)
 GO_BIN_SUFFIX ?= $(TARGET_OS)-$(TARGET_ARCH)
 
 # Binaries
-KUSTOMIZE = $(shell pwd)/bin/kustomize
-GOLANGCILINT = $(shell pwd)/bin/golangci-lint
-MOCKERY = $(shell pwd)/bin/mockery
-ENVTEST = $(shell pwd)/bin/setup-envtest
+KUSTOMIZE := $(BIN_DIR)/kustomize
+GOLANGCILINT := $(BIN_DIR)/golangci-lint
+MOCKERY := $(BIN_DIR)/mockery
+ENVTEST := $(BIN_DIR)/setup-envtest
+GOCOVMERGE := $(BIN_DIR)/gocovmerge
+GOCOV := $(BIN_DIR)/gocov
+GCOV2LCOV := $(BIN_DIR)/gcov2lcov
 
-ENVTEST_K8S_VERSION = 1.24
+ENVTEST_K8S_VERSION := 1.24
 
 .PHONY: all
 all: build test
@@ -64,10 +72,22 @@ lint: golangci-lint ## Lint code.
 
 .PHONY: unit-test
 unit-test: envtest ## Run unit tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./...
 
 .PHONY: test
 test: lint unit-test ## Run all tests (lint, unit-test).
+
+.PHONY: test-coverage
+test-coverage: | envtest gocovmerge gocov2lcov ## Run coverage tests
+	mkdir -p $(PROJECT_DIR)/build/coverage/pkgs
+	for pkg in $(TESTPKGS); do \
+		KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test \
+		-coverpkg=github.com/Mellanox/multi-networkpolicy-tc/... \
+		-covermode=atomic \
+		-coverprofile="$(COVERAGE_DIR)/pkgs/`echo $$pkg | tr "/" "-"`.cover" $$pkg ;\
+	done
+	$(GOCOVMERGE) $(COVERAGE_DIR)/pkgs/*.cover > $(COVERAGE_DIR)/profile.out
+	$(GCOV2LCOV) -infile $(COVERAGE_DIR)/profile.out -outfile $(COVERAGE_DIR)/lcov.info
 
 ##@ Build
 .PHONY: build
@@ -121,6 +141,13 @@ mockery: ## Download mockery if necessary.
 envtest: ## Download envtest if necessary
 	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
 
+.PHONY: gocovmerge
+gocovmerge: ## Download gocovmerge if necessary
+	$(call go-install-tool,$(GOCOVMERGE),github.com/wadey/gocovmerge@latest)
+
+.PHONY: gocov2lcov
+gocov2lcov: ## Download gocov2lcov if necessary
+	$(call go-install-tool,$(GCOV2LCOV),github.com/jandelgado/gcov2lcov@v1.0.5)
 
 .PHONY: clean
 clean:

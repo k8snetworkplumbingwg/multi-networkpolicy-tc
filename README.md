@@ -1,4 +1,10 @@
 # multi-networkpolicy-tc
+[![Build](https://github.com/Mellanox/multi-networkpolicy-tc/actions/workflows/build.yml/badge.svg)](https://github.com/Mellanox/multi-networkpolicy-tc/actions/workflows/build.yml)
+[![Test](https://github.com/Mellanox/multi-networkpolicy-tc/actions/workflows/test.yml/badge.svg)](https://github.com/Mellanox/multi-networkpolicy-tc/actions/workflows/test.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Mellanox/multi-networkpolicy-tc)](https://goreportcard.com/report/github.com/Mellanox/multi-networkpolicy-tc)
+[![Coverage Status](https://coveralls.io/repos/github/Mellanox/multi-networkpolicy-tc/badge.svg?branch=main)](https://coveralls.io/github/Mellanox/multi-networkpolicy-tc?branch=main)
+
+
 [multi-networkpolicy](https://github.com/k8snetworkplumbingwg/multi-networkpolicy) implementation
 using [Linux Traffic Control (TC)](https://tldp.org/HOWTO/Traffic-Control-HOWTO/intro.html)
 
