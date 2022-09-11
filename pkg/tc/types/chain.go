@@ -91,7 +91,6 @@ func (cb *ChainBuilder) Build() *ChainImpl {
 	if cb.chain.Chain == nil {
 		defChain := ChainDefaultChain
 		cb.chain.Chain = &defChain
-
 	}
 	return NewChainImpl(cb.chain.Parent, cb.chain.Chain)
 }

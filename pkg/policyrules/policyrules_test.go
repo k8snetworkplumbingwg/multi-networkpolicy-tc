@@ -172,7 +172,7 @@ var _ = Describe("Renderer tests", func() {
 							[]string{"192.168.1.2"}).
 						WithLabels("app=target").
 						Build()
-					addPolicy(&testutil.PolicyIpBlockNoPorts, "accel-net")
+					addPolicy(&testutil.PolicyIPBlockNoPorts, "accel-net")
 
 					ruleSets, err := renderer.RenderEgress(target, currentPolicies, currentPods, currentNamespaces)
 					Expect(err).ToNot(HaveOccurred())
@@ -228,7 +228,7 @@ var _ = Describe("Renderer tests", func() {
 		Describe("IPBlock single policy", func() {
 			Context("without ports", func() {
 				It("returns correct rules for single pod interface", func() {
-					addPolicy(&testutil.PolicyIpBlockNoPorts, "accel-net")
+					addPolicy(&testutil.PolicyIPBlockNoPorts, "accel-net")
 
 					ruleSets, err := renderer.RenderEgress(target, currentPolicies, currentPods, currentNamespaces)
 					Expect(err).ToNot(HaveOccurred())
@@ -267,7 +267,7 @@ var _ = Describe("Renderer tests", func() {
 
 			Context("with ports", func() {
 				It("returns correct rules", func() {
-					addPolicy(&testutil.PolicyIpBlockWithPorts, "accel-net")
+					addPolicy(&testutil.PolicyIPBlockWithPorts, "accel-net")
 
 					ruleSets, err := renderer.RenderEgress(target, currentPolicies, currentPods, currentNamespaces)
 					Expect(err).ToNot(HaveOccurred())
@@ -321,7 +321,7 @@ var _ = Describe("Renderer tests", func() {
 
 			Context("multiple rules", func() {
 				It("returns expected rules", func() {
-					addPolicy(&testutil.PolicyIpBlockWithMultipeRules, "accel-net")
+					addPolicy(&testutil.PolicyIPBlockWithMultipeRules, "accel-net")
 
 					ruleSets, err := renderer.RenderEgress(target, currentPolicies, currentPods, currentNamespaces)
 					Expect(err).ToNot(HaveOccurred())
@@ -399,7 +399,7 @@ var _ = Describe("Renderer tests", func() {
 
 			Context("multiple peers", func() {
 				It("returns expected rules", func() {
-					addPolicy(&testutil.PolicyIpBlockWithMultipePeers, "accel-net")
+					addPolicy(&testutil.PolicyIPBlockWithMultipePeers, "accel-net")
 
 					ruleSets, err := renderer.RenderEgress(target, currentPolicies, currentPods, currentNamespaces)
 					Expect(err).ToNot(HaveOccurred())
@@ -760,7 +760,7 @@ var _ = Describe("Renderer tests", func() {
 			Context("multiple policies on same interface", func() {
 				It("returns correct rules", func() {
 					addPolicy(&testutil.PolicySelectorAsSourceNoPorts, "accel-net")
-					addPolicy(&testutil.PolicyIpBlockNoPorts, "accel-net")
+					addPolicy(&testutil.PolicyIPBlockNoPorts, "accel-net")
 
 					source := testutil.NewPodInfoBuiler().
 						WithName("source-pod-1").
@@ -824,7 +824,7 @@ var _ = Describe("Renderer tests", func() {
 
 			Context("multiple interfaces same network", func() {
 				It("returns correct rules per interface", func() {
-					addPolicy(&testutil.PolicyIpBlockNoPorts, "accel-net")
+					addPolicy(&testutil.PolicyIPBlockNoPorts, "accel-net")
 
 					target = testutil.NewPodInfoBuiler().
 						WithName("target-pod").
@@ -884,7 +884,7 @@ var _ = Describe("Renderer tests", func() {
 
 			Context("multiple interfaces different network", func() {
 				It("returns correct rules per interface", func() {
-					addPolicy(&testutil.PolicyIpBlockNoPorts, "accel-net1", "accel-net2")
+					addPolicy(&testutil.PolicyIPBlockNoPorts, "accel-net1", "accel-net2")
 
 					target = testutil.NewPodInfoBuiler().
 						WithName("target-pod").

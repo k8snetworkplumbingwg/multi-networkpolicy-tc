@@ -29,7 +29,7 @@ func GetHostname(hostnameOverride string) (string, error) {
 		var err error
 		hostName, err = os.Hostname()
 		if err != nil {
-			return "", fmt.Errorf("couldn't determine hostname: %v", err)
+			return "", fmt.Errorf("couldn't determine hostname: %w", err)
 		}
 	}
 

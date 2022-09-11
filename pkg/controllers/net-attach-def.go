@@ -1,5 +1,6 @@
 package controllers
 
+//nolint:lll
 import (
 	"encoding/json"
 	"fmt"
@@ -42,7 +43,8 @@ type NetDefConfig struct {
 }
 
 // NewNetDefConfig creates a new instance of NetDefConfig
-func NewNetDefConfig(netdefInformer netdefinformerv1.NetworkAttachmentDefinitionInformer, resyncPeriod time.Duration) *NetDefConfig {
+func NewNetDefConfig(netdefInformer netdefinformerv1.NetworkAttachmentDefinitionInformer,
+	resyncPeriod time.Duration) *NetDefConfig {
 	result := &NetDefConfig{
 		listerSynced: netdefInformer.Informer().HasSynced,
 	}

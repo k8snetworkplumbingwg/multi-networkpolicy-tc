@@ -11,7 +11,7 @@ import (
 	"github.com/Mellanox/multi-networkpolicy-tc/pkg/tc/types"
 )
 
-func ensureCallAndQdisc(tcObj *tc.TCObjects, err error) {
+func ensureCallAndQdisc(tcObj *tc.Objects, err error) {
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	ExpectWithOffset(1, tcObj.QDisc).ToNot(BeNil())
 	ExpectWithOffset(1, tcObj.QDisc.Type()).To(Equal(types.QDiscIngressType))
@@ -32,7 +32,7 @@ func filtersEqual(actualFilters, expectedFilters tc.FilterSet) {
 }
 
 var _ = Describe("SimpleTCGenerator tests", func() {
-	var generator tc.TCGenerator
+	var generator tc.Generator
 	defaultDropFliter := types.NewFlowerFilterBuilder().
 		WithPriority(tc.PrioDefault).
 		WithProtocol(types.FilterProtocolIP).

@@ -52,7 +52,7 @@ var (
 		},
 	}
 
-	PolicyIpBlockNoPorts = multiv1beta1.MultiNetworkPolicy{
+	PolicyIPBlockNoPorts = multiv1beta1.MultiNetworkPolicy{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "MultiNetworkPolicy",
 			APIVersion: "k8s.cni.cncf.io/v1beta1",
@@ -83,7 +83,7 @@ var (
 		},
 	}
 
-	PolicyIpBlockWithPorts = multiv1beta1.MultiNetworkPolicy{
+	PolicyIPBlockWithPorts = multiv1beta1.MultiNetworkPolicy{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "MultiNetworkPolicy",
 			APIVersion: "k8s.cni.cncf.io/v1beta1",
@@ -124,7 +124,7 @@ var (
 		},
 	}
 
-	PolicyIpBlockWithMultipeRules = multiv1beta1.MultiNetworkPolicy{
+	PolicyIPBlockWithMultipeRules = multiv1beta1.MultiNetworkPolicy{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "MultiNetworkPolicy",
 			APIVersion: "k8s.cni.cncf.io/v1beta1",
@@ -171,7 +171,7 @@ var (
 		},
 	}
 
-	PolicyIpBlockWithMultipePeers = multiv1beta1.MultiNetworkPolicy{
+	PolicyIPBlockWithMultipePeers = multiv1beta1.MultiNetworkPolicy{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "MultiNetworkPolicy",
 			APIVersion: "k8s.cni.cncf.io/v1beta1",

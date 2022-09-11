@@ -62,7 +62,7 @@ var _ = Describe("Actuator TC tests", func() {
 
 	Context("Actuate Qdisc Only", func() {
 		It("fails if listing qdisc fails", func() {
-			tcObj := &tc.TCObjects{
+			tcObj := &tc.Objects{
 				QDisc: ingressQdisc,
 			}
 
@@ -73,7 +73,7 @@ var _ = Describe("Actuator TC tests", func() {
 		})
 
 		It("fails if delete qdisc fails", func() {
-			tcObj := &tc.TCObjects{}
+			tcObj := &tc.Objects{}
 
 			tcMock.On("QDiscList").Return([]tctypes.QDisc{ingressQdisc}, nil)
 			tcMock.On("QDiscDel", mock.Anything).Return(errors.New("test error!"))
@@ -82,9 +82,9 @@ var _ = Describe("Actuator TC tests", func() {
 			Expect(err).To(HaveOccurred())
 		})
 
-		When("TCObjects does not contain Qdisc", func() {
+		When("Objects does not contain Qdisc", func() {
 			It("deletes ingress Qdisc when exists", func() {
-				tcObj := &tc.TCObjects{}
+				tcObj := &tc.Objects{}
 
 				tcMock.On("QDiscList").Return([]tctypes.QDisc{ingressQdisc}, nil)
 				tcMock.On("QDiscDel", mock.MatchedBy(ingressQdiscMatch())).Return(nil)
@@ -94,7 +94,7 @@ var _ = Describe("Actuator TC tests", func() {
 			})
 
 			It("does nothing if ingress Qdisc does not exists", func() {
-				tcObj := &tc.TCObjects{}
+				tcObj := &tc.Objects{}
 
 				tcMock.On("QDiscList").Return([]tctypes.QDisc{}, nil)
 
@@ -103,9 +103,9 @@ var _ = Describe("Actuator TC tests", func() {
 			})
 		})
 
-		When("TCObjects contain ingress Qdisc", func() {
+		When("Objects contain ingress Qdisc", func() {
 			It("does nothing if ingress Qdisc exist without chain 0", func() {
-				tcObj := &tc.TCObjects{
+				tcObj := &tc.Objects{
 					QDisc: ingressQdisc,
 				}
 
@@ -118,7 +118,7 @@ var _ = Describe("Actuator TC tests", func() {
 			})
 
 			It("deletes chain 0 on ingress qdisc when exists", func() {
-				tcObj := &tc.TCObjects{
+				tcObj := &tc.Objects{
 					QDisc: ingressQdisc,
 				}
 
@@ -135,7 +135,7 @@ var _ = Describe("Actuator TC tests", func() {
 			})
 
 			It("does nothing if ingress Qdisc exists, chain 0 does not exist", func() {
-				tcObj := &tc.TCObjects{
+				tcObj := &tc.Objects{
 					QDisc: ingressQdisc,
 				}
 
@@ -147,7 +147,7 @@ var _ = Describe("Actuator TC tests", func() {
 			})
 
 			It("fails if delete chain fails", func() {
-				tcObj := &tc.TCObjects{
+				tcObj := &tc.Objects{
 					QDisc: ingressQdisc,
 				}
 
@@ -191,16 +191,16 @@ var _ = Describe("Actuator TC tests", func() {
 				WithAction(tctypes.NewGenericActionBuiler().WithPass().Build()).
 				Build(),
 		}
-		var tcObj *tc.TCObjects
+		var tcObj *tc.Objects
 
 		BeforeEach(func() {
-			tcObj = &tc.TCObjects{
+			tcObj = &tc.Objects{
 				QDisc:   ingressQdisc,
 				Filters: neededFilters,
 			}
 		})
 
-		When("no ingress qdisc in TCObjects", func() {
+		When("no ingress qdisc in Objects", func() {
 			It("fails", func() {
 				tcObj.QDisc = nil
 
@@ -209,7 +209,7 @@ var _ = Describe("Actuator TC tests", func() {
 			})
 		})
 
-		When("filters provided in TCObjects, no filters set on ingress qdisc", func() {
+		When("filters provided in Objects, no filters set on ingress qdisc", func() {
 			BeforeEach(func() {
 				tcMock.On("QDiscList").Return([]tctypes.QDisc{ingressQdisc}, nil)
 			})
@@ -245,7 +245,7 @@ var _ = Describe("Actuator TC tests", func() {
 			})
 		})
 
-		When("filters provided in TCObjects, and filters set on ingress qdisc", func() {
+		When("filters provided in Objects, and filters set on ingress qdisc", func() {
 			BeforeEach(func() {
 				tcMock.On("QDiscList").Return([]tctypes.QDisc{ingressQdisc}, nil)
 				tcMock.On("FilterList", mock.MatchedBy(ingressQdiscMatch())).Return(existingFilters, nil)

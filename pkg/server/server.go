@@ -1,5 +1,6 @@
 package server
 
+//nolint:lll
 import (
 	"context"
 	"fmt"
@@ -90,7 +91,7 @@ type Server struct {
 	syncRunner *async.BoundedFrequencyRunner
 
 	policyRuleRenderer      policyrules.Renderer
-	tcRuleGenerator         tc.TCGenerator
+	tcRuleGenerator         tc.Generator
 	sriovnetProvider        netwrappers.SriovnetProvider
 	createActuatorFromRepFn func(string) tc.Actuator
 }
@@ -193,17 +194,20 @@ func (s *Server) SyncLoop(ctx context.Context) {
 func NewServer(o *Options) (*Server, error) {
 	var kubeConfig *rest.Config
 	var err error
-	if o.KConfig != nil {
+
+	switch {
+	case o.KConfig != nil:
 		kubeConfig = o.KConfig
-	} else if len(o.Kubeconfig) == 0 {
-		klog.Info("Neither kubeconfig file nor master URL was specified. Falling back to in-cluster config.")
-		kubeConfig, err = rest.InClusterConfig()
-	} else {
+	case o.Kubeconfig != "":
 		kubeConfig, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 			&clientcmd.ClientConfigLoadingRules{ExplicitPath: o.Kubeconfig},
 			&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: o.master}},
 		).ClientConfig()
+	default:
+		klog.Info("Neither kubeconfig file nor master URL was specified. Falling back to in-cluster config.")
+		kubeConfig, err = rest.InClusterConfig()
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -556,7 +560,7 @@ func (s *Server) syncMultiPolicy() {
 			klog.InfoS("rules set applied successfully for pod")
 
 			// optionally save rules to file
-			err = s.savePodInterfaceRules(podInfo, &ruleSet, tcObjs, rep)
+			err = s.savePodInterfaceRules(podInfo, ruleSet, tcObjs, rep)
 			if err != nil {
 				klog.Warningf("failed to save pod interface rules. %v", err)
 				continue
@@ -569,7 +573,7 @@ func (s *Server) syncMultiPolicy() {
 
 // savePodInterfaceRules saves pod interface tc objects to file if podRulesPath option is enabled in server
 func (s *Server) savePodInterfaceRules(
-	pInfo *controllers.PodInfo, ruleSet *policyrules.PolicyRuleSet, tcObj *tc.TCObjects, rep string) error {
+	pInfo *controllers.PodInfo, ruleSet policyrules.PolicyRuleSet, tcObj *tc.Objects, rep string) error {
 	// skip it if no podRulesPath option
 	if s.Options.podRulesPath == "" {
 		return nil
@@ -638,7 +642,7 @@ func (s *Server) getRepresentor(pciAddr string) (string, error) {
 
 // createActuatorForRep creates a new tc.Actuator with provider representor netdev
 func createActuatorForRep(rep string) tc.Actuator {
-	tcApi := driver.NewTcCmdLineImpl(
+	tcAPI := driver.NewTcCmdLineImpl(
 		rep, klog.NewKlogr().WithName("tc-cmdline-driver"), exec.New())
-	return tc.NewActuatorTCImpl(tcApi, klog.NewKlogr().WithName("tc-actuator"))
+	return tc.NewActuatorTCImpl(tcAPI, klog.NewKlogr().WithName("tc-actuator"))
 }

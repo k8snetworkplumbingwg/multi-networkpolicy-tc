@@ -1,5 +1,6 @@
 package controllers
 
+//nolint:lll
 import (
 	"fmt"
 	"reflect"
@@ -40,7 +41,8 @@ type NetworkPolicyConfig struct {
 }
 
 // NewNetworkPolicyConfig creates a new NetworkPolicyConfig .
-func NewNetworkPolicyConfig(policyInformer multiinformerv1beta1.MultiNetworkPolicyInformer, resyncPeriod time.Duration) *NetworkPolicyConfig {
+func NewNetworkPolicyConfig(policyInformer multiinformerv1beta1.MultiNetworkPolicyInformer,
+	resyncPeriod time.Duration) *NetworkPolicyConfig {
 	result := &NetworkPolicyConfig{
 		listerSynced: policyInformer.Informer().HasSynced,
 	}
@@ -221,12 +223,12 @@ func (pct *PolicyChangeTracker) String() string {
 }
 
 // newPolicyInfo creates a new instance of PolicyInfo
-func (pct *PolicyChangeTracker) newPolicyInfo(policy *multiv1beta1.MultiNetworkPolicy) (*PolicyInfo, error) {
+func (pct *PolicyChangeTracker) newPolicyInfo(policy *multiv1beta1.MultiNetworkPolicy) *PolicyInfo {
 	info := &PolicyInfo{
 		PolicyNetworks: multiutils.NetworkListFromPolicy(policy),
 		Policy:         policy,
 	}
-	return info, nil
+	return info
 }
 
 // policyToPolicyMap creates PolicyMap from MultiNetworkPolicy.
@@ -235,13 +237,11 @@ func (pct *PolicyChangeTracker) policyToPolicyMap(policy *multiv1beta1.MultiNetw
 	if policy == nil {
 		return nil
 	}
-	policyMap := make(PolicyMap)
-	policyInfo, err := pct.newPolicyInfo(policy)
-	if err != nil {
-		return nil
-	}
 
+	policyMap := make(PolicyMap)
+	policyInfo := pct.newPolicyInfo(policy)
 	policyMap[types.NamespacedName{Namespace: policy.Namespace, Name: policy.Name}] = *policyInfo
+
 	return policyMap
 }
 
