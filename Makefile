@@ -67,7 +67,7 @@ help: ## Display this help.
 ##@ Development
 .PHONY: lint
 lint: golangci-lint ## Lint code.
-	$(GOLANGCILINT) run --timeout 10m
+	$(GOLANGCILINT) run
 
 .PHONY: unit-test
 unit-test: envtest ## Run unit tests.
@@ -129,7 +129,7 @@ kustomize: ## Download kustomize locally if necessary.
 
 .PHONY: golangci-lint
 golangci-lint: ## Download golangci-lint locally if necessary.
-	$(call go-install-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2)
+	$(call go-install-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/cmd/golangci-lint@v1.49.0)
 
 .PHONY: mockery
 mockery: ## Download mockery if necessary.
