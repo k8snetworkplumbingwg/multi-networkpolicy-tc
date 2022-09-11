@@ -9,7 +9,7 @@ PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 BUILD_DIR := $(PROJECT_DIR)/build
 BIN_DIR := $(PROJECT_DIR)/bin
 COVERAGE_DIR := $(BUILD_DIR)/coverage
-PKGS := $(shell cd $(PROJECT_DIR) && env GOPATH=$(GOPATH) go list ./... | grep -v mocks)
+PKGS := $(shell cd $(PROJECT_DIR) && go list ./... | grep -v mocks)
 TESTPKGS := $(shell go list -f '{{ if or .TestGoFiles .XTestGoFiles }}{{ .ImportPath }}{{ end }}' $(PKGS))
 
 # Image related parameters, used when building image
@@ -39,7 +39,6 @@ GOLANGCILINT := $(BIN_DIR)/golangci-lint
 MOCKERY := $(BIN_DIR)/mockery
 ENVTEST := $(BIN_DIR)/setup-envtest
 GOCOVMERGE := $(BIN_DIR)/gocovmerge
-GOCOV := $(BIN_DIR)/gocov
 GCOV2LCOV := $(BIN_DIR)/gcov2lcov
 
 ENVTEST_K8S_VERSION := 1.24
@@ -78,11 +77,10 @@ unit-test: envtest ## Run unit tests.
 test: lint unit-test ## Run all tests (lint, unit-test).
 
 .PHONY: test-coverage
-test-coverage: | envtest gocovmerge gocov2lcov ## Run coverage tests
+test-coverage: | envtest gocovmerge gcov2lcov ## Run coverage tests
 	mkdir -p $(PROJECT_DIR)/build/coverage/pkgs
 	for pkg in $(TESTPKGS); do \
 		KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test \
-		-coverpkg=github.com/Mellanox/multi-networkpolicy-tc/... \
 		-covermode=atomic \
 		-coverprofile="$(COVERAGE_DIR)/pkgs/`echo $$pkg | tr "/" "-"`.cover" $$pkg ;\
 	done
@@ -145,8 +143,8 @@ envtest: ## Download envtest if necessary
 gocovmerge: ## Download gocovmerge if necessary
 	$(call go-install-tool,$(GOCOVMERGE),github.com/wadey/gocovmerge@latest)
 
-.PHONY: gocov2lcov
-gocov2lcov: ## Download gocov2lcov if necessary
+.PHONY: gcov2lcov
+gcov2lcov: ## Download gcov2lcov if necessary
 	$(call go-install-tool,$(GCOV2LCOV),github.com/jandelgado/gcov2lcov@v1.0.5)
 
 .PHONY: clean
