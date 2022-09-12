@@ -10,7 +10,7 @@ import (
 var _ = Describe("Filter tests", func() {
 	passAction := types.NewGenericActionBuiler().WithPass().Build()
 	f := types.NewFlowerFilterBuilder().
-		WithProtocol(types.FilterProtocolIP).
+		WithProtocol(types.FilterProtocolIPv4).
 		WithPriority(100).
 		WithChain(0).
 		WithHandle(1).
@@ -23,7 +23,7 @@ var _ = Describe("Filter tests", func() {
 	Describe("Creational", func() {
 		Context("FlowerFilterBuilder", func() {
 			It("Builds FlowerFilter with correct attributes", func() {
-				Expect(f.Protocol).To(Equal(types.FilterProtocolIP))
+				Expect(f.Protocol).To(Equal(types.FilterProtocolIPv4))
 				Expect(*f.Priority).To(BeEquivalentTo(100))
 				Expect(*f.Chain).To(BeEquivalentTo(0))
 				Expect(*f.Handle).To(BeEquivalentTo(1))
@@ -39,7 +39,7 @@ var _ = Describe("Filter tests", func() {
 	Describe("Filter Interface", func() {
 		Context("Attrs()", func() {
 			It("returns expected attrs", func() {
-				Expect(f.Attrs().Protocol).To(Equal(types.FilterProtocolIP))
+				Expect(f.Attrs().Protocol).To(Equal(types.FilterProtocolIPv4))
 				Expect(*f.Attrs().Priority).To(BeEquivalentTo(100))
 				Expect(*f.Attrs().Chain).To(BeEquivalentTo(0))
 				Expect(*f.Attrs().Handle).To(BeEquivalentTo(1))
@@ -50,7 +50,7 @@ var _ = Describe("Filter tests", func() {
 			// Note(adrianc): Tests below can be made much more exhaustive
 			It("returns true if filters are equal", func() {
 				other := types.NewFlowerFilterBuilder().
-					WithProtocol(types.FilterProtocolIP).
+					WithProtocol(types.FilterProtocolIPv4).
 					WithPriority(100).
 					WithChain(0).
 					WithHandle(1).
@@ -64,7 +64,7 @@ var _ = Describe("Filter tests", func() {
 
 			It("returns true if filters are equal with and without default chain", func() {
 				other := types.NewFlowerFilterBuilder().
-					WithProtocol(types.FilterProtocolIP).
+					WithProtocol(types.FilterProtocolIPv4).
 					WithPriority(100).
 					WithHandle(1).
 					WithMatchKeyDstIP("10.10.10.10/24").
@@ -77,7 +77,7 @@ var _ = Describe("Filter tests", func() {
 
 			It("returns false if filters are not equal", func() {
 				other := types.NewFlowerFilterBuilder().
-					WithProtocol(types.FilterProtocolIP).
+					WithProtocol(types.FilterProtocolIPv4).
 					WithPriority(200).
 					WithHandle(1).
 					Build()

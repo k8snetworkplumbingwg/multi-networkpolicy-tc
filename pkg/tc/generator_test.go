@@ -35,7 +35,7 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 	var generator tc.Generator
 	defaultDropFliter := types.NewFlowerFilterBuilder().
 		WithPriority(tc.PrioDefault).
-		WithProtocol(types.FilterProtocolIP).
+		WithProtocol(types.FilterProtocolIPv4).
 		WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
 		Build()
 
@@ -125,7 +125,7 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 					expectedFilters.Add(
 						types.NewFlowerFilterBuilder().
 							WithPriority(tc.PrioPass).
-							WithProtocol(types.FilterProtocolIP).
+							WithProtocol(types.FilterProtocolIPv4).
 							WithMatchKeyDstIP(ip.String()).
 							WithAction(types.NewGenericActionBuiler().WithPass().Build()).
 							Build())
@@ -152,7 +152,7 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 					expectedFilters.Add(
 						types.NewFlowerFilterBuilder().
 							WithPriority(tc.PrioPass).
-							WithProtocol(types.FilterProtocolIP).
+							WithProtocol(types.FilterProtocolIPv4).
 							WithMatchKeyIPProto(string(port.Protocol)).
 							WithMatchKeyDstPort(port.Number).
 							WithAction(types.NewGenericActionBuiler().WithPass().Build()).
@@ -182,7 +182,7 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 						expectedFilters.Add(
 							types.NewFlowerFilterBuilder().
 								WithPriority(tc.PrioPass).
-								WithProtocol(types.FilterProtocolIP).
+								WithProtocol(types.FilterProtocolIPv4).
 								WithMatchKeyDstIP(ip.String()).
 								WithMatchKeyIPProto(string(port.Protocol)).
 								WithMatchKeyDstPort(port.Number).
@@ -209,7 +209,7 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 				expectedFilters.Add(defaultDropFliter)
 				expectedFilters.Add(types.NewFlowerFilterBuilder().
 					WithPriority(tc.PrioPass).
-					WithProtocol(types.FilterProtocolIP).
+					WithProtocol(types.FilterProtocolIPv4).
 					WithAction(types.NewGenericActionBuiler().WithPass().Build()).
 					Build())
 
@@ -234,7 +234,7 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 					expectedFilters.Add(
 						types.NewFlowerFilterBuilder().
 							WithPriority(tc.PrioDrop).
-							WithProtocol(types.FilterProtocolIP).
+							WithProtocol(types.FilterProtocolIPv4).
 							WithMatchKeyDstIP(ip.String()).
 							WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
 							Build())
@@ -261,7 +261,7 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 					expectedFilters.Add(
 						types.NewFlowerFilterBuilder().
 							WithPriority(tc.PrioDrop).
-							WithProtocol(types.FilterProtocolIP).
+							WithProtocol(types.FilterProtocolIPv4).
 							WithMatchKeyIPProto(string(port.Protocol)).
 							WithMatchKeyDstPort(port.Number).
 							WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
@@ -291,7 +291,7 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 						expectedFilters.Add(
 							types.NewFlowerFilterBuilder().
 								WithPriority(tc.PrioDrop).
-								WithProtocol(types.FilterProtocolIP).
+								WithProtocol(types.FilterProtocolIPv4).
 								WithMatchKeyDstIP(ip.String()).
 								WithMatchKeyIPProto(string(port.Protocol)).
 								WithMatchKeyDstPort(port.Number).
@@ -318,7 +318,7 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 				expectedFilters.Add(defaultDropFliter)
 				expectedFilters.Add(types.NewFlowerFilterBuilder().
 					WithPriority(tc.PrioDrop).
-					WithProtocol(types.FilterProtocolIP).
+					WithProtocol(types.FilterProtocolIPv4).
 					WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
 					Build())
 
@@ -350,7 +350,7 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 				expectedFilters.Add(
 					types.NewFlowerFilterBuilder().
 						WithPriority(tc.PrioPass).
-						WithProtocol(types.FilterProtocolIP).
+						WithProtocol(types.FilterProtocolIPv4).
 						WithMatchKeyDstIP(ips[0].String()).
 						WithMatchKeyIPProto(string(ports[0].Protocol)).
 						WithMatchKeyDstPort(ports[0].Number).
@@ -359,7 +359,7 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 				expectedFilters.Add(
 					types.NewFlowerFilterBuilder().
 						WithPriority(tc.PrioDrop).
-						WithProtocol(types.FilterProtocolIP).
+						WithProtocol(types.FilterProtocolIPv4).
 						WithMatchKeyDstIP(ips[1].String()).
 						WithMatchKeyIPProto(string(ports[1].Protocol)).
 						WithMatchKeyDstPort(ports[1].Number).

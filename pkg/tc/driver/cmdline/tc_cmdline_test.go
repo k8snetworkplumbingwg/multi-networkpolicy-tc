@@ -254,7 +254,7 @@ var _ = Describe("TC Cmdline driver tests", func() {
 		var fakeCmd *testingexec.FakeCmd
 		ingressQdisc := tctypes.NewIngressQDiscBuilder().Build()
 		filterToAdd := tctypes.NewFlowerFilterBuilder().
-			WithProtocol(tctypes.FilterProtocolIP).
+			WithProtocol(tctypes.FilterProtocolIPv4).
 			WithAction(tctypes.NewGenericActionBuiler().WithPass().Build()).
 			WithMatchKeyDstIP("10.10.10.2/24").
 			Build()
@@ -289,7 +289,7 @@ var _ = Describe("TC Cmdline driver tests", func() {
 		var fakeCmd *testingexec.FakeCmd
 		ingressQdisc := tctypes.NewIngressQDiscBuilder().Build()
 		filterToDel := tctypes.NewFilterAttrsBuilder().
-			WithProtocol(tctypes.FilterProtocolIP).
+			WithProtocol(tctypes.FilterProtocolIPv4).
 			WithPriority(200).
 			WithHandle(0x1).
 			WithChain(0).
@@ -381,7 +381,7 @@ var _ = Describe("TC Cmdline driver tests", func() {
 		It("retuns non empty flower filter without error when underlying command passes", func() {
 			fakeCmd.OutputScript = append(fakeCmd.OutputScript, newFakeAction([]byte(filterListOut), nil, nil))
 			expectedFilter := tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithPriority(200).
 				WithHandle(1).
 				WithChain(0).

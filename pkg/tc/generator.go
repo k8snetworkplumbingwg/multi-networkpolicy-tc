@@ -68,7 +68,7 @@ func (s *SimpleTCGenerator) GenerateFromPolicyRuleSet(ruleSet policyrules.Policy
 	// 1. default drop rule at priority 300
 	defaultDropFliter := tctypes.NewFlowerFilterBuilder().
 		WithPriority(PrioDefault).
-		WithProtocol(tctypes.FilterProtocolIP).
+		WithProtocol(tctypes.FilterProtocolIPv4).
 		WithAction(tctypes.NewGenericActionBuiler().WithDrop().Build()).
 		Build()
 	tcObj.Filters = append(tcObj.Filters, defaultDropFliter)
@@ -122,7 +122,7 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 				for _, port := range ports {
 					filters = append(filters,
 						tctypes.NewFlowerFilterBuilder().
-							WithProtocol(tctypes.FilterProtocolIP).
+							WithProtocol(tctypes.FilterProtocolIPv4).
 							WithPriority(prio).
 							WithMatchKeyDstIP(ipCidr.String()).
 							WithMatchKeyIPProto(string(port.Protocol)).
@@ -133,7 +133,7 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 			} else {
 				filters = append(filters,
 					tctypes.NewFlowerFilterBuilder().
-						WithProtocol(tctypes.FilterProtocolIP).
+						WithProtocol(tctypes.FilterProtocolIPv4).
 						WithPriority(prio).
 						WithMatchKeyDstIP(ipCidr.String()).
 						WithAction(action).
@@ -144,7 +144,7 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 		for _, port := range ports {
 			filters = append(filters,
 				tctypes.NewFlowerFilterBuilder().
-					WithProtocol(tctypes.FilterProtocolIP).
+					WithProtocol(tctypes.FilterProtocolIPv4).
 					WithPriority(prio).
 					WithMatchKeyIPProto(string(port.Protocol)).
 					WithMatchKeyDstPort(port.Number).
@@ -155,7 +155,7 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 		// match all with action
 		filters = append(filters,
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithPriority(prio).
 				WithAction(action).
 				Build())

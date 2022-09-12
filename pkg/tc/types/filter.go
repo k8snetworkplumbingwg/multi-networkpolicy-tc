@@ -7,8 +7,9 @@ import (
 
 const (
 	// Values for FilterAttrs.Protocol
-	FilterProtocolAll FilterProtocol = "all"
-	FilterProtocolIP  FilterProtocol = "ip" // note ip == ipv4
+	FilterProtocolAll  FilterProtocol = "all"
+	FilterProtocolIPv4 FilterProtocol = "ip"
+	FilterProtocolIPv6 FilterProtocol = "ipv6"
 
 	// FlowerFilter.Kind
 	FilterKindFlower FilterKind = "flower"

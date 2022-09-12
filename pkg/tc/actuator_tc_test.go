@@ -165,13 +165,13 @@ var _ = Describe("Actuator TC tests", func() {
 	Context("Actuate with filters", func() {
 		neededFilters := []tctypes.Filter{
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithPriority(100).
 				WithMatchKeyDstIP("10.100.0.0/24").
 				WithAction(tctypes.NewGenericActionBuiler().WithDrop().Build()).
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithPriority(200).
 				WithMatchKeyDstIP("10.100.0.0/16").
 				WithAction(tctypes.NewGenericActionBuiler().WithPass().Build()).
@@ -179,13 +179,13 @@ var _ = Describe("Actuator TC tests", func() {
 		}
 		existingFilters := []tctypes.Filter{
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithPriority(100).
 				WithMatchKeyDstIP("10.100.1.0/24").
 				WithAction(tctypes.NewGenericActionBuiler().WithDrop().Build()).
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithPriority(200).
 				WithMatchKeyDstIP("10.100.0.0/16").
 				WithAction(tctypes.NewGenericActionBuiler().WithPass().Build()).
