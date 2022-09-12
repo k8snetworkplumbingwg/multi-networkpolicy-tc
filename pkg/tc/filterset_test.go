@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/tc"
-	tctypes "github.com/Mellanox/multi-networkpolicy-tc/pkg/tc/types"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
+	tctypes "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"
 )
 
 var _ = Describe("FilterSetImpl tests", func() {

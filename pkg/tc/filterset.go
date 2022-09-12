@@ -1,6 +1,6 @@
 package tc
 
-import "github.com/Mellanox/multi-networkpolicy-tc/pkg/tc/types"
+import "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"
 
 // FilterSet interface defines an API for Filter set, which allows
 // to perform set operations on a collection of Filters

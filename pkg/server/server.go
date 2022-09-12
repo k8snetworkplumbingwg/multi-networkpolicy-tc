@@ -35,12 +35,12 @@ import (
 	"k8s.io/kubernetes/pkg/util/async"
 	"k8s.io/utils/exec"
 
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
-	netwrappers "github.com/Mellanox/multi-networkpolicy-tc/pkg/net"
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/policyrules"
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/tc"
-	driver "github.com/Mellanox/multi-networkpolicy-tc/pkg/tc/driver/cmdline"
-	multiutils "github.com/Mellanox/multi-networkpolicy-tc/pkg/utils"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/controllers"
+	netwrappers "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/net"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
+	driver "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/driver/cmdline"
+	multiutils "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
 
 const (

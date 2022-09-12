@@ -78,7 +78,7 @@ spec:
       serviceAccountName: multi-networkpolicy-tc
       containers:
       - name: multi-networkpolicy-tc
-        image: ghcr.io/mellanox/multi-networkpolicy-tc:latest
+        image: ghcr.io/k8snetworkplumbingwg/multi-networkpolicy-tc:latest
         imagePullPolicy: IfNotPresent
         command: ["/usr/bin/multi-networkpolicy-tc"]
         args:

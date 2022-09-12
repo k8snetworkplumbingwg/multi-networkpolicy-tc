@@ -1,8 +1,8 @@
 # multi-networkpolicy-tc
-[![Build](https://github.com/Mellanox/multi-networkpolicy-tc/actions/workflows/build.yml/badge.svg)](https://github.com/Mellanox/multi-networkpolicy-tc/actions/workflows/build.yml)
-[![Test](https://github.com/Mellanox/multi-networkpolicy-tc/actions/workflows/test.yml/badge.svg)](https://github.com/Mellanox/multi-networkpolicy-tc/actions/workflows/test.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Mellanox/multi-networkpolicy-tc)](https://goreportcard.com/report/github.com/Mellanox/multi-networkpolicy-tc)
-[![Coverage Status](https://coveralls.io/repos/github/Mellanox/multi-networkpolicy-tc/badge.svg?branch=main)](https://coveralls.io/github/Mellanox/multi-networkpolicy-tc?branch=main)
+[![Build](https://github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/actions/workflows/build.yml/badge.svg)](https://github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/actions/workflows/build.yml)
+[![Test](https://github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/actions/workflows/test.yml/badge.svg)](https://github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/actions/workflows/test.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/k8snetworkplumbingwg/multi-networkpolicy-tc)](https://goreportcard.com/report/github.com/k8snetworkplumbingwg/multi-networkpolicy-tc)
+[![Coverage Status](https://coveralls.io/repos/github/k8snetworkplumbingwg/multi-networkpolicy-tc/badge.svg?branch=main)](https://coveralls.io/github/k8snetworkplumbingwg/multi-networkpolicy-tc?branch=main)
 
 
 [multi-networkpolicy](https://github.com/k8snetworkplumbingwg/multi-networkpolicy) implementation
@@ -51,7 +51,7 @@ Binary executable is located under `build` folder
 Install MultiNetworkPolicy CRD into Kubernetes.
 
 ```
-$ git clone https://github.com/Mellanox/multi-networkpolicy-tc
+$ git clone https://github.com/k8snetworkplumbingwg/multi-networkpolicy-tc
 $ cd multi-networkpolicy-tc
 $ kubectl create -f deploy/crds/multi-net-crd.yaml
 customresourcedefinition.apiextensions.k8s.io/multi-networkpolicies.k8s.cni.cncf.io created
@@ -60,7 +60,7 @@ customresourcedefinition.apiextensions.k8s.io/multi-networkpolicies.k8s.cni.cncf
 Deploy multi-networkpolicy-tc into Kubernetes.
 
 ```
-$ git clone https://github.com/Mellanox/multi-networkpolicy-tc
+$ git clone https://github.com/k8snetworkplumbingwg/multi-networkpolicy-tc
 $ cd multi-networkpolicy-tc
 $ kubectl create -f deploy/deploy.yml
 clusterrole.rbac.authorization.k8s.io/multi-networkpolicy created

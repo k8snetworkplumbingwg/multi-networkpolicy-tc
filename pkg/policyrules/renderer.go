@@ -12,8 +12,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
-	multiutils "github.com/Mellanox/multi-networkpolicy-tc/pkg/utils"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/controllers"
+	multiutils "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
 
 // Renderer is an interface used to render PolicyRuleSet for a Pod Network
