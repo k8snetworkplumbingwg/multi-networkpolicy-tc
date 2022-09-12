@@ -12,8 +12,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/server"
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/utils"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/server"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
 
 const logFlushFreqFlagName = "log-flush-frequency"

@@ -3,8 +3,8 @@
 package mocks
 
 import (
-	policyrules "github.com/Mellanox/multi-networkpolicy-tc/pkg/policyrules"
-	tc "github.com/Mellanox/multi-networkpolicy-tc/pkg/tc"
+	policyrules "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
+	tc "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
 	mock "github.com/stretchr/testify/mock"
 )
 

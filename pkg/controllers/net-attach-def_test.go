@@ -16,8 +16,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers/testutil"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/controllers"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/controllers/testutil"
 )
 
 type FakeNetDefConfigStub struct {

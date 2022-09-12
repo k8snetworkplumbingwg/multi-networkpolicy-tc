@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	multiv1beta1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
 
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/controllers"
 )
 
 func ToPtr[T any](v T) *T {

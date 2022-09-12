@@ -10,10 +10,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/tc"
-	tctypes "github.com/Mellanox/multi-networkpolicy-tc/pkg/tc/types"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
+	tctypes "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"
 
-	tcmocks "github.com/Mellanox/multi-networkpolicy-tc/pkg/tc/mocks"
+	tcmocks "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/mocks"
 )
 
 func ingressQdiscMatch() func(q tctypes.QDisc) bool {

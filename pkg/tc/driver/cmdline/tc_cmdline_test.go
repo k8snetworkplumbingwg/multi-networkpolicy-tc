@@ -10,10 +10,10 @@ import (
 
 	testingexec "k8s.io/utils/exec/testing"
 
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/policyrules"
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/tc"
-	driver "github.com/Mellanox/multi-networkpolicy-tc/pkg/tc/driver/cmdline"
-	tctypes "github.com/Mellanox/multi-networkpolicy-tc/pkg/tc/types"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
+	driver "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/driver/cmdline"
+	tctypes "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"
 )
 
 const (

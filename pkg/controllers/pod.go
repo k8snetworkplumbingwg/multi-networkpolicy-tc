@@ -19,7 +19,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
-	multiutils "github.com/Mellanox/multi-networkpolicy-tc/pkg/utils"
+	multiutils "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
 
 // PodHandler is an abstract interface of objects which receive

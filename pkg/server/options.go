@@ -7,9 +7,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
-	netwrappers "github.com/Mellanox/multi-networkpolicy-tc/pkg/net"
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/policyrules"
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/tc"
+	netwrappers "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/net"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
 )
 
 // Options stores option for the command

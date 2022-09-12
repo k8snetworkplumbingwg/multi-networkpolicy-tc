@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/utils"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
 
 // NewActuatorFileWriterImpl returns a new ActuatorFileWriterImpl instance

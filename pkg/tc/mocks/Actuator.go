@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	tc "github.com/Mellanox/multi-networkpolicy-tc/pkg/tc"
+	tc "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
 	mock "github.com/stretchr/testify/mock"
 )
 

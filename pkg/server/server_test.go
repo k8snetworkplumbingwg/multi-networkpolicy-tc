@@ -15,12 +15,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/controllers/testutil"
-	netmocks "github.com/Mellanox/multi-networkpolicy-tc/pkg/net/mocks"
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/policyrules"
-	policymocks "github.com/Mellanox/multi-networkpolicy-tc/pkg/policyrules/mocks"
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/tc"
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/tc/mocks"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/controllers/testutil"
+	netmocks "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/net/mocks"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
+	policymocks "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules/mocks"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/mocks"
 )
 
 func createTestPodAndSetRunning(ctx context.Context, testPod *v1.Pod) {

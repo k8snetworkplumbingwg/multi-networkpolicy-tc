@@ -1,4 +1,4 @@
-module github.com/Mellanox/multi-networkpolicy-tc
+module github.com/k8snetworkplumbingwg/multi-networkpolicy-tc
 
 go 1.18
 

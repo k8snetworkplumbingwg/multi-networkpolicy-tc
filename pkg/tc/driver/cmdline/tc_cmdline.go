@@ -11,7 +11,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/utils/exec"
 
-	"github.com/Mellanox/multi-networkpolicy-tc/pkg/tc/types"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"
 )
 
 // NewTcCmdLineImpl creates a new instance of TcCmdLineImpl

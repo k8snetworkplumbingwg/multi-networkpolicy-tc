@@ -1,7 +1,7 @@
 package tc
 
 import (
-	tctypes "github.com/Mellanox/multi-networkpolicy-tc/pkg/tc/types"
+	tctypes "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"
 )
 
 // TC defines an interface to interact with Linux Traffic Control subsystem
