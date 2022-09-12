@@ -16,18 +16,18 @@ const (
 	PrioDrop    = 100
 )
 
-// TCObjects is a struct containing TC objects
-type TCObjects struct {
+// Objects is a struct containing TC objects
+type Objects struct {
 	// QDisc is the TC QDisc where rules should be applied
 	QDisc tctypes.QDisc
 	// Filters are the TC filters that should be applied
 	Filters []tctypes.Filter
 }
 
-// TCGenerator is an interface to generate TCObjects from PolicyRuleSet
-type TCGenerator interface {
-	// GenerateFromPolicyRuleSet creates TCObjects that correspond to the provided ruleSet
-	GenerateFromPolicyRuleSet(ruleSet policyrules.PolicyRuleSet) (*TCObjects, error)
+// Generator is an interface to generate Objects from PolicyRuleSet
+type Generator interface {
+	// GenerateFromPolicyRuleSet creates Objects that correspond to the provided ruleSet
+	GenerateFromPolicyRuleSet(ruleSet policyrules.PolicyRuleSet) (*Objects, error)
 }
 
 // NewSimpleTCGenerator creates a new SimpleTCGenerator instance
@@ -35,19 +35,19 @@ func NewSimpleTCGenerator() *SimpleTCGenerator {
 	return &SimpleTCGenerator{}
 }
 
-// SimpleTCGenerator is a simple implementation for TCGenerator interface
+// SimpleTCGenerator is a simple implementation for Generator interface
 type SimpleTCGenerator struct{}
 
-// GenerateFromPolicyRuleSet implements TCGenerator interface
+// GenerateFromPolicyRuleSet implements Generator interface
 // It renders TC objects needed to satisfy the rules in the provided PolicyRuleSet
 // QDisc is Ingress QDisc
 // Filters is a list of filters which satisfy the PolicyRuleSet. They are generated as follows
 //  1. Drop rule at chain 0, priority 300 for all traffic
 //  2. Accept rules per CIDR X Port for every Pass Rule in PolicyRuleSet at chain 0, priority 200
 //  3. Drop rules per CIDR X Port for every Drop Rule in PolicyRuleSet at chain 0, prioirty 100
-//  Note: only Egress Policy type is supported
-func (s *SimpleTCGenerator) GenerateFromPolicyRuleSet(ruleSet policyrules.PolicyRuleSet) (*TCObjects, error) {
-	tcObj := &TCObjects{
+//     Note: only Egress Policy type is supported
+func (s *SimpleTCGenerator) GenerateFromPolicyRuleSet(ruleSet policyrules.PolicyRuleSet) (*Objects, error) {
+	tcObj := &Objects{
 		QDisc:   nil,
 		Filters: make([]tctypes.Filter, 0),
 	}
@@ -76,19 +76,21 @@ func (s *SimpleTCGenerator) GenerateFromPolicyRuleSet(ruleSet policyrules.Policy
 	for _, rule := range ruleSet.Rules {
 		// 2. accept rules at priority 200
 		// 3. drop rules at priority 100
-		if rule.Action == policyrules.PolicyActionPass {
+		switch rule.Action {
+		case policyrules.PolicyActionPass:
 			passFilters, err := s.genPassFilters(rule)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to generate filters")
 			}
 			tcObj.Filters = append(tcObj.Filters, passFilters...)
-		} else if rule.Action == policyrules.PolicyActionDrop {
+		case policyrules.PolicyActionDrop:
 			dropFilters, err := s.genDropFilters(rule)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to generate filters")
 			}
 			tcObj.Filters = append(tcObj.Filters, dropFilters...)
-		} else {
+		default:
+			// we should not get here
 			return nil, fmt.Errorf("unknown policy action for rule. %s", rule.Action)
 		}
 	}
@@ -107,11 +109,14 @@ func (s *SimpleTCGenerator) genDropFilters(rule policyrules.Rule) ([]tctypes.Fil
 
 // genFilters generates (flower) Filters based on provided ipCidrs, ports on the given prio with the given action
 // the filters generated are: matching on {ipCidrs} [X {Ports}] With priority `prio`, and action `action`
-func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules.Port, prio uint16, action tctypes.Action) ([]tctypes.Filter, error) {
+func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules.Port, prio uint16,
+	action tctypes.Action) ([]tctypes.Filter, error) {
 	hasIPs := len(ipCidrs) > 0
 	hasPorts := len(ports) > 0
 	filters := make([]tctypes.Filter, 0)
-	if hasIPs {
+
+	switch {
+	case hasIPs:
 		for _, ipCidr := range ipCidrs {
 			if hasPorts {
 				for _, port := range ports {
@@ -135,7 +140,7 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 						Build())
 			}
 		}
-	} else if hasPorts {
+	case hasPorts:
 		for _, port := range ports {
 			filters = append(filters,
 				tctypes.NewFlowerFilterBuilder().
@@ -146,7 +151,7 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 					WithAction(action).
 					Build())
 		}
-	} else {
+	default:
 		// match all with action
 		filters = append(filters,
 			tctypes.NewFlowerFilterBuilder().
@@ -155,5 +160,6 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 				WithAction(action).
 				Build())
 	}
+
 	return filters, nil
 }

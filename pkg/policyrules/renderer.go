@@ -38,18 +38,18 @@ type Renderer interface {
 		currentNamespaces controllers.NamespaceMap) ([]PolicyRuleSet, error)
 }
 
-// rendererImpl implements Renderer Interface
-type rendererImpl struct {
+// RendererImpl implements Renderer Interface
+type RendererImpl struct {
 	log klog.Logger
 }
 
 // NewRendererImpl creates a new instance of Renderer implementation
-func NewRendererImpl(log klog.Logger) Renderer {
-	return &rendererImpl{log: log}
+func NewRendererImpl(log klog.Logger) *RendererImpl {
+	return &RendererImpl{log: log}
 }
 
 // RenderEgress implements Renderer Interface
-func (r *rendererImpl) RenderEgress(target *controllers.PodInfo,
+func (r *RendererImpl) RenderEgress(target *controllers.PodInfo,
 	currentPolicies controllers.PolicyMap,
 	currentPods controllers.PodMap,
 	currentNamespaces controllers.NamespaceMap) ([]PolicyRuleSet, error) {
@@ -130,7 +130,7 @@ func (r *rendererImpl) RenderEgress(target *controllers.PodInfo,
 }
 
 // renderEgressForInterface renders egress policyRuleSet for given interface and given policy
-func (r *rendererImpl) renderEgressForInterface(targetInterface controllers.InterfaceInfo,
+func (r *RendererImpl) renderEgressForInterface(targetInterface controllers.InterfaceInfo,
 	policy controllers.PolicyInfo,
 	currentPods controllers.PodMap,
 	currentNamespaces controllers.NamespaceMap) PolicyRuleSet {
@@ -182,7 +182,7 @@ func (r *rendererImpl) renderEgressForInterface(targetInterface controllers.Inte
 }
 
 // renderRulesWithSelectors renders rules for pod/ns Peers
-func (r *rendererImpl) renderRulesWithSelectors(podSel *metav1.LabelSelector,
+func (r *RendererImpl) renderRulesWithSelectors(podSel *metav1.LabelSelector,
 	nsSel *metav1.LabelSelector,
 	ports []Port,
 	currentPods controllers.PodMap,
@@ -277,7 +277,6 @@ func (r *rendererImpl) renderRulesWithSelectors(podSel *metav1.LabelSelector,
 				}
 			}
 		}
-
 	}
 	// add Rule with these IPs
 	if len(ipCidrs) > 0 || len(ports) > 0 {
@@ -291,7 +290,7 @@ func (r *rendererImpl) renderRulesWithSelectors(podSel *metav1.LabelSelector,
 }
 
 // renderRulesWithIPBlock renders Rules for IPBlock peer with CIDR and Except
-func (r *rendererImpl) renderRulesWithIPBlock(ipBlock *multiv1beta1.IPBlock, ports []Port) []Rule {
+func (r *RendererImpl) renderRulesWithIPBlock(ipBlock *multiv1beta1.IPBlock, ports []Port) []Rule {
 	var rules []Rule
 
 	// handle cidr
@@ -327,7 +326,7 @@ func (r *rendererImpl) renderRulesWithIPBlock(ipBlock *multiv1beta1.IPBlock, por
 }
 
 // getPorts parses []MutliNetworkPolicyPort and returns []Port
-func (r *rendererImpl) getPorts(ports []multiv1beta1.MultiNetworkPolicyPort) []Port {
+func (r *RendererImpl) getPorts(ports []multiv1beta1.MultiNetworkPolicyPort) []Port {
 	policyPorts := make([]Port, 0, len(ports))
 	for _, p := range ports {
 		policyPort := Port{}
@@ -358,8 +357,9 @@ func (r *rendererImpl) getPorts(ports []multiv1beta1.MultiNetworkPolicyPort) []P
 }
 
 // RenderIngress implements Renderer Interface
-func (r *rendererImpl) RenderIngress(target *controllers.PodInfo, currentPolicies controllers.PolicyMap, currentPods controllers.PodMap, currentNamespaces controllers.NamespaceMap) ([]PolicyRuleSet, error) {
-	//TODO implement me
+func (r *RendererImpl) RenderIngress(target *controllers.PodInfo, currentPolicies controllers.PolicyMap,
+	currentPods controllers.PodMap, currentNamespaces controllers.NamespaceMap) ([]PolicyRuleSet, error) {
+	// TODO implement me
 	klog.Infof("RenderIngress() not Implemented")
-	return []PolicyRuleSet{}, fmt.Errorf("Not Implemented")
+	return []PolicyRuleSet{}, fmt.Errorf("not implemented")
 }

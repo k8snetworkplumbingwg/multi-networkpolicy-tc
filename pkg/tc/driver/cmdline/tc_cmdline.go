@@ -1,3 +1,4 @@
+//nolint:prealloc
 package driver
 
 import (
@@ -149,11 +150,11 @@ func (t *TcCmdLineImpl) FilterList(qdisc types.QDisc) ([]types.Filter, error) {
 			WithPriority(f.Priority).
 			WithHandle(f.Options.Handle)
 
-		if f.Options.Keys.IpProto != nil {
-			fb.WithMatchKeyIPProto(*f.Options.Keys.IpProto)
+		if f.Options.Keys.IPProto != nil {
+			fb.WithMatchKeyIPProto(*f.Options.Keys.IPProto)
 		}
-		if f.Options.Keys.DstIp != nil {
-			fb.WithMatchKeyDstIP(*f.Options.Keys.DstIp)
+		if f.Options.Keys.DstIP != nil {
+			fb.WithMatchKeyDstIP(*f.Options.Keys.DstIP)
 		}
 		if f.Options.Keys.DstPort != nil {
 			fb.WithMatchKeyDstPort(*f.Options.Keys.DstPort)
@@ -216,16 +217,19 @@ func (t *TcCmdLineImpl) ChainList(qdisc types.QDisc) ([]types.Chain, error) {
 
 // parseMajorMinor parses TC string Handle and Parent. for a given format the following output is expected as depicted
 // below.
-//  "abcd" -> int32(0xabcd)
-//  "abcdef01" -> int32(0xabcdef01)
-//  "abcd:" -> int32(0xabcd)
-//  "abcd:ef01" -> int32(0xabcdef01)
+//
+//	"abcd" -> int32(0xabcd)
+//	"abcdef01" -> int32(0xabcdef01)
+//	"abcd:" -> int32(0xabcd)
+//	"abcd:ef01" -> int32(0xabcdef01)
 func parseMajorMinor(mm string) (uint32, error) {
 	parsedMm := strings.Split(mm, ":")
-	if len(parsedMm) == 1 {
+
+	switch len(parsedMm) {
+	case 1:
 		p, err := strconv.ParseUint(parsedMm[0], 16, 32)
 		return uint32(p), err
-	} else if len(parsedMm) == 2 {
+	case 2:
 		major, err := strconv.ParseUint(parsedMm[0], 16, 32)
 		if err != nil {
 			return 0, err
@@ -239,7 +243,7 @@ func parseMajorMinor(mm string) (uint32, error) {
 			return ((uint32(major) & 0xffff) << 16) | (uint32(minor) & 0xffff), nil
 		}
 		return uint32(major), nil
-	} else {
+	default:
 		return 0, fmt.Errorf("failed to parse MajorMinor string: %s", mm)
 	}
 }

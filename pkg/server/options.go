@@ -27,7 +27,7 @@ type Options struct {
 	// used for testing purposes, leave empty otherwise
 	createActuatorForRep func(string) tc.Actuator
 	policyRuleRenderer   policyrules.Renderer
-	tcRuleGenerator      tc.TCGenerator
+	tcRuleGenerator      tc.Generator
 	sriovnetProvider     netwrappers.SriovnetProvider
 }
 
@@ -35,11 +35,16 @@ type Options struct {
 func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	klog.InitFlags(nil)
 	fs.SortFlags = false
-	fs.StringVar(&o.Kubeconfig, "kubeconfig", o.Kubeconfig, "Path to kubeconfig file with authorization information (the master location is set by the master flag).")
-	fs.StringVar(&o.master, "master", o.master, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
-	fs.StringVar(&o.hostnameOverride, "hostname-override", o.hostnameOverride, "If non-empty, will use this string as identification instead of the actual hostname.")
-	fs.StringSliceVar(&o.networkPlugins, "network-plugins", []string{"accelerated-bridge"}, "List of network plugins to be be considered for network policies.")
-	fs.StringVar(&o.podRulesPath, "pod-rules-path", o.podRulesPath, "If non-empty, will use this path to store pod's rules for troubleshooting.")
+	fs.StringVar(&o.Kubeconfig, "kubeconfig", o.Kubeconfig,
+		"Path to kubeconfig file with authorization information (master location is set by the master flag).")
+	fs.StringVar(&o.master, "master", o.master,
+		"The address of the Kubernetes API server (overrides any value in kubeconfig)")
+	fs.StringVar(&o.hostnameOverride, "hostname-override", o.hostnameOverride,
+		"If non-empty, will use this string as identification instead of the actual hostname.")
+	fs.StringSliceVar(&o.networkPlugins, "network-plugins", []string{"accelerated-bridge"},
+		"List of network plugins to be be considered for network policies.")
+	fs.StringVar(&o.podRulesPath, "pod-rules-path", o.podRulesPath,
+		"If non-empty, will use this path to store pod's rules for troubleshooting.")
 	fs.AddGoFlagSet(flag.CommandLine)
 }
 

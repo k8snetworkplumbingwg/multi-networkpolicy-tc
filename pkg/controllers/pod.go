@@ -184,7 +184,7 @@ func (info *PodInfo) PolicyAppliesForPod(policy *multiv1beta1.MultiNetworkPolicy
 	if policy.Spec.PodSelector.Size() != 0 {
 		policyMap, err := metav1.LabelSelectorAsMap(&policy.Spec.PodSelector)
 		if err != nil {
-			return false, fmt.Errorf("bad label selector for policy [%s]: %v",
+			return false, fmt.Errorf("bad label selector for policy [%s]: %w",
 				types.NamespacedName{Namespace: policy.Namespace, Name: policy.Name}.String(), err)
 		}
 		policyPodSelector := labels.Set(policyMap).AsSelectorPreValidated()
@@ -223,7 +223,7 @@ func (pct *PodChangeTracker) String() string {
 }
 
 // newPodInfo creates a new instance of PodInfo
-func (pct *PodChangeTracker) newPodInfo(pod *v1.Pod) (*PodInfo, error) {
+func (pct *PodChangeTracker) newPodInfo(pod *v1.Pod) *PodInfo {
 	// TODO(adrianc): we should rework PodChangeTracker to only track pods that have secondary network with CNI
 	// that is supported.
 	var statuses []netdefv1.NetworkStatus
@@ -313,7 +313,7 @@ func (pct *PodChangeTracker) newPodInfo(pod *v1.Pod) (*PodInfo, error) {
 		NodeName:      pod.Spec.NodeName,
 		Interfaces:    netifs,
 	}
-	return info, nil
+	return info
 }
 
 // NewPodChangeTracker creates a new instance of PodChangeTracker
@@ -333,12 +333,9 @@ func (pct *PodChangeTracker) podToPodMap(pod *v1.Pod) PodMap {
 	}
 
 	podMap := make(PodMap)
-	podinfo, err := pct.newPodInfo(pod)
-	if err != nil {
-		return nil
-	}
-
+	podinfo := pct.newPodInfo(pod)
 	podMap[types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name}] = *podinfo
+
 	return podMap
 }
 
@@ -382,7 +379,7 @@ func (pm *PodMap) Update(changes *PodChangeTracker) {
 	}
 }
 
-// apply applies changes to PodMap
+// apply changes to PodMap
 func (pm *PodMap) apply(changes *PodChangeTracker) {
 	if pm == nil || changes == nil {
 		return
@@ -398,7 +395,7 @@ func (pm *PodMap) apply(changes *PodChangeTracker) {
 	changes.items = make(map[types.NamespacedName]*podChange)
 }
 
-// merge merges changes into PodMap
+// merge changes into PodMap
 func (pm *PodMap) merge(other PodMap) {
 	if pm == nil {
 		return
@@ -420,7 +417,7 @@ func (pm *PodMap) unmerge(other PodMap) {
 	}
 }
 
-// GetPodInfo retuns PodInfo identified by namespace and name from PodMap
+// GetPodInfo returns PodInfo identified by namespace and name from PodMap
 func (pm *PodMap) GetPodInfo(namespace, name string) (*PodInfo, error) {
 	if pm == nil {
 		return nil, fmt.Errorf("nil PodMap")

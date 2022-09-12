@@ -48,14 +48,14 @@ var _ = Describe("Server test", func() {
 	var wg sync.WaitGroup
 	var mockActuator *mocks.Actuator
 	var mockRenderer *policymocks.Renderer
-	var mockRuleGenerator *mocks.TCGenerator
+	var mockRuleGenerator *mocks.Generator
 	var mockSriovnetProvider *netmocks.SriovnetProvider
 
 	BeforeEach(func() {
 		var err error
 		mockActuator = &mocks.Actuator{}
 		mockRenderer = &policymocks.Renderer{}
-		mockRuleGenerator = &mocks.TCGenerator{}
+		mockRuleGenerator = &mocks.Generator{}
 		mockSriovnetProvider = &netmocks.SriovnetProvider{}
 
 		o := &Options{

@@ -47,7 +47,7 @@ var _ = Describe("Actuator file writer tests", Ordered, func() {
 		It("fails to actuate on non existent path", func() {
 			nonExistentPath := filepath.Join(tempDir, "does", "not", "exist")
 			actuator = tc.NewActuatorFileWriterImpl(nonExistentPath, logger)
-			objs := &tc.TCObjects{
+			objs := &tc.Objects{
 				QDisc: ingressQdisc,
 			}
 			err := actuator.Actuate(objs)
@@ -57,7 +57,7 @@ var _ = Describe("Actuator file writer tests", Ordered, func() {
 		It("fails to actuate on invalid path", func() {
 			invalidPath := ""
 			actuator = tc.NewActuatorFileWriterImpl(invalidPath, logger)
-			objs := &tc.TCObjects{
+			objs := &tc.Objects{
 				QDisc: ingressQdisc,
 			}
 			err := actuator.Actuate(objs)
@@ -67,7 +67,7 @@ var _ = Describe("Actuator file writer tests", Ordered, func() {
 
 	Context("Actuator file writer with valid path", func() {
 		var tmpFilePath string
-		objs := &tc.TCObjects{
+		objs := &tc.Objects{
 			QDisc: ingressQdisc,
 			Filters: []types.Filter{
 				types.NewFlowerFilterBuilder().WithProtocol(types.FilterProtocolIP).WithPriority(100).Build(),

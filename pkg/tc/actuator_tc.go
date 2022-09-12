@@ -9,24 +9,24 @@ import (
 
 // NewActuatorTCImpl creates a new ActuatorTCImpl
 func NewActuatorTCImpl(tcIfc TC, log klog.Logger) *ActuatorTCImpl {
-	return &ActuatorTCImpl{tcApi: tcIfc, log: log}
+	return &ActuatorTCImpl{tcAPI: tcIfc, log: log}
 }
 
 // ActuatorTCImpl is an implementation of Actuator interface using provided TC interface to apply TC objects
 type ActuatorTCImpl struct {
-	tcApi TC
+	tcAPI TC
 	log   klog.Logger
 }
 
-// Actuate is an implementation of Actuator interface. it applies TCObjects on the representor
+// Actuate is an implementation of Actuator interface. it applies Objects on the representor
 // Note: it assumes all filters are in Chain 0
-func (a *ActuatorTCImpl) Actuate(objects *TCObjects) error {
+func (a *ActuatorTCImpl) Actuate(objects *Objects) error {
 	if objects.QDisc == nil && len(objects.Filters) > 0 {
 		return errors.New("Qdisc cannot be nil if Filters are provided")
 	}
 
 	// list qdiscs
-	currentQDiscs, err := a.tcApi.QDiscList()
+	currentQDiscs, err := a.tcAPI.QDiscList()
 	if err != nil {
 		return errors.Wrap(err, "failed to list qdiscs")
 	}
@@ -42,21 +42,21 @@ func (a *ActuatorTCImpl) Actuate(objects *TCObjects) error {
 	if objects.QDisc == nil {
 		// delete ingress qdisc if exist
 		if ingressQDiscExist {
-			return a.tcApi.QDiscDel(types.NewIngressQDiscBuilder().Build())
+			return a.tcAPI.QDiscDel(types.NewIngressQDiscBuilder().Build())
 		}
 		return nil
 	}
 
 	if len(objects.Filters) == 0 {
 		// delete filters in chain 0 if exist
-		chains, err := a.tcApi.ChainList(types.NewIngressQDiscBuilder().Build())
+		chains, err := a.tcAPI.ChainList(types.NewIngressQDiscBuilder().Build())
 		if err != nil {
 			return err
 		}
 
 		for _, c := range chains {
 			if *c.Attrs().Chain == 0 {
-				return a.tcApi.ChainDel(objects.QDisc, types.NewChainBuilder().WithChain(0).Build())
+				return a.tcAPI.ChainDel(objects.QDisc, types.NewChainBuilder().WithChain(0).Build())
 			}
 		}
 		return nil
@@ -64,13 +64,13 @@ func (a *ActuatorTCImpl) Actuate(objects *TCObjects) error {
 
 	// add ingress qdisc if needed
 	if !ingressQDiscExist {
-		if err = a.tcApi.QDiscAdd(objects.QDisc); err != nil {
+		if err = a.tcAPI.QDiscAdd(objects.QDisc); err != nil {
 			return err
 		}
 	}
 
 	// get existing filters
-	existing, err := a.tcApi.FilterList(objects.QDisc)
+	existing, err := a.tcAPI.FilterList(objects.QDisc)
 	if err != nil {
 		return err
 	}
@@ -91,19 +91,19 @@ func (a *ActuatorTCImpl) Actuate(objects *TCObjects) error {
 		return nil
 	}
 
-	//remove un-needed filters and add new ones
+	// remove un-needed filters and add new ones
 	toRemove := existingFilterSet.Difference(newFilterSet).List()
 	toAdd := newFilterSet.Difference(existingFilterSet).List()
 
 	for _, f := range toRemove {
-		err := a.tcApi.FilterDel(objects.QDisc, f.Attrs())
+		err := a.tcAPI.FilterDel(objects.QDisc, f.Attrs())
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, f := range toAdd {
-		err := a.tcApi.FilterAdd(objects.QDisc, f)
+		err := a.tcAPI.FilterAdd(objects.QDisc, f)
 		if err != nil {
 			return err
 		}

@@ -29,7 +29,7 @@ var _ = Describe("Filter tests", func() {
 				Expect(*f.Handle).To(BeEquivalentTo(1))
 				Expect(f.Flower).ToNot(BeNil())
 				Expect(*f.Flower.DstIP).To(Equal("10.10.10.10/24"))
-				Expect(*f.Flower.IpProto).To(Equal("tcp"))
+				Expect(*f.Flower.IPProto).To(Equal("tcp"))
 				Expect(*f.Flower.DstPort).To(BeEquivalentTo(6666))
 				Expect(f.Actions).To(BeEquivalentTo([]types.Action{passAction}))
 			})

@@ -26,8 +26,8 @@ type cFilterOptions struct {
 }
 
 type cFlowerKeys struct {
-	IpProto *string `json:"ip_proto,omitempty"`
-	DstIp   *string `json:"dst_ip,omitempty"`
+	IPProto *string `json:"ip_proto,omitempty"`
+	DstIP   *string `json:"dst_ip,omitempty"`
 	DstPort *uint16 `json:"dst_port,omitempty"`
 }
 

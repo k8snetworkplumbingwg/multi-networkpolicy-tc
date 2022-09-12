@@ -13,11 +13,11 @@ type Actuator struct {
 }
 
 // Actuate provides a mock function with given fields: objects
-func (_m *Actuator) Actuate(objects *tc.TCObjects) error {
+func (_m *Actuator) Actuate(objects *tc.Objects) error {
 	ret := _m.Called(objects)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*tc.TCObjects) error); ok {
+	if rf, ok := ret.Get(0).(func(*tc.Objects) error); ok {
 		r0 = rf(objects)
 	} else {
 		r0 = ret.Error(0)

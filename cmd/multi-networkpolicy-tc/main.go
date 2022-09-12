@@ -38,7 +38,6 @@ func initLogs(ctx context.Context) {
 func main() {
 	ctx := utils.SetupSignalHandler()
 	initLogs(ctx)
-	defer klog.Flush()
 	opts := server.NewOptions()
 
 	cmd := &cobra.Command{
@@ -56,6 +55,8 @@ func main() {
 	opts.AddFlags(cmd.Flags())
 
 	if err := cmd.Execute(); err != nil {
+		klog.Flush()
 		os.Exit(1)
 	}
+	klog.Flush()
 }

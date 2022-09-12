@@ -102,7 +102,7 @@ func (fa *FilterAttrs) Equals(other *FilterAttrs) bool {
 	if fa.Protocol != other.Protocol {
 		return false
 	}
-	defChain := uint16(ChainDefaultChain)
+	defChain := ChainDefaultChain
 	if !compare(fa.Chain, other.Chain, &defChain) {
 		return false
 	}
@@ -114,7 +114,7 @@ func (fa *FilterAttrs) Equals(other *FilterAttrs) bool {
 
 // FlowerSpec holds flower filter specification (which consists of a list of Match)
 type FlowerSpec struct {
-	IpProto *string
+	IPProto *string
 	DstIP   *string
 	DstPort *uint16
 }
@@ -127,8 +127,8 @@ func (ff *FlowerSpec) GenCmdLineArgs() []string {
 		return args
 	}
 
-	if ff.IpProto != nil {
-		args = append(args, string(FlowerKeyIPProto), *ff.IpProto)
+	if ff.IPProto != nil {
+		args = append(args, string(FlowerKeyIPProto), *ff.IPProto)
 	}
 
 	if ff.DstIP != nil {
@@ -153,7 +153,7 @@ func (ff *FlowerSpec) Equals(other *FlowerSpec) bool {
 	}
 
 	// same Key/val
-	if !compare(ff.IpProto, other.IpProto, nil) {
+	if !compare(ff.IPProto, other.IPProto, nil) {
 		return false
 	}
 	if !compare(ff.DstIP, other.DstIP, nil) {
@@ -275,7 +275,8 @@ func (fb *FilterAttrsBuilder) WithPriority(p uint16) *FilterAttrsBuilder {
 // new object on each call. that is, pointer/slice/map types will not be deep copied.
 // to create several objects, different builders should be used.
 func (fb *FilterAttrsBuilder) Build() *FilterAttrs {
-	return NewFilterAttrs(fb.filterAttrs.Kind, fb.filterAttrs.Protocol, fb.filterAttrs.Chain, fb.filterAttrs.Handle, fb.filterAttrs.Priority)
+	return NewFilterAttrs(fb.filterAttrs.Kind, fb.filterAttrs.Protocol, fb.filterAttrs.Chain, fb.filterAttrs.Handle,
+		fb.filterAttrs.Priority)
 }
 
 // NewFlowerFilterBuilder returns a new instance of FlowerFilterBuilder
@@ -328,7 +329,7 @@ func (fb *FlowerFilterBuilder) WithPriority(p uint16) *FlowerFilterBuilder {
 // WithMatchKeyIPProto adds Match with FlowerKeyIPProto key and specified value to FlowerFilterBuilder
 func (fb *FlowerFilterBuilder) WithMatchKeyIPProto(val string) *FlowerFilterBuilder {
 	lower := strings.ToLower(val)
-	fb.flowerFilter.Flower.IpProto = &lower
+	fb.flowerFilter.Flower.IPProto = &lower
 	return fb
 }
 

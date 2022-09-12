@@ -34,7 +34,7 @@ func (b *PodInfoBuiler) WithNamespace(ns string) *PodInfoBuiler {
 	return b
 }
 
-// WithLabels accepts list of "<key>="<val>" formatted strings, overrides labels set in preceeding call
+// WithLabels accepts list of "<key>="<val>" formatted strings, overrides labels set in preceding call
 func (b *PodInfoBuiler) WithLabels(kvs ...string) *PodInfoBuiler {
 	b.pi.Labels = make(map[string]string)
 
@@ -82,7 +82,7 @@ func (b *NamespaceInfoBuilder) WithName(n string) *NamespaceInfoBuilder {
 	return b
 }
 
-// WithLabels accepts list of "<key>="<val>" formatted strings, overrides labels set in preceeding call
+// WithLabels accepts list of "<key>="<val>" formatted strings, overrides labels set in preceding call
 func (b *NamespaceInfoBuilder) WithLabels(kvs ...string) *NamespaceInfoBuilder {
 	b.ni.Labels = make(map[string]string)
 
