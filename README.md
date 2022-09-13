@@ -1,4 +1,5 @@
 # multi-networkpolicy-tc
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Build](https://github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/actions/workflows/build.yml/badge.svg)](https://github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/actions/workflows/build.yml)
 [![Test](https://github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/actions/workflows/test.yml/badge.svg)](https://github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/k8snetworkplumbingwg/multi-networkpolicy-tc)](https://goreportcard.com/report/github.com/k8snetworkplumbingwg/multi-networkpolicy-tc)
