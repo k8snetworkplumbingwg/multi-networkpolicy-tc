@@ -16,7 +16,11 @@ const (
 )
 
 var (
-	allProtocols = [...]tctypes.FilterProtocol{tctypes.FilterProtocolIPv4, tctypes.FilterProtocolIPv6}
+	allProtocols = [...]tctypes.FilterProtocol{
+		tctypes.FilterProtocolIPv4,
+		tctypes.FilterProtocolIPv6,
+		tctypes.FilterProtocol8021Q,
+	}
 )
 
 // Objects is a struct containing TC objects
@@ -68,9 +72,9 @@ func (s *SimpleTCGenerator) GenerateFromPolicyRuleSet(ruleSet policyrules.Policy
 	}
 
 	// create filters
-	// 1. default drop rule for supported protocols at priority 3xx
-	tcObj.Filters = append(tcObj.Filters, s.genFilters(nil, nil, PrioDefault,
-		tctypes.NewGenericActionBuiler().WithDrop().Build())...)
+
+	// default filters at priority 3xx
+	tcObj.Filters = append(tcObj.Filters, s.genDefaultFilters()...)
 
 	for _, rule := range ruleSet.Rules {
 		// 2. accept rules at priority 2xx
@@ -98,9 +102,21 @@ func (s *SimpleTCGenerator) genDropFilters(rule policyrules.Rule) []tctypes.Filt
 	return s.genFilters(rule.IPCidrs, rule.Ports, PrioDrop, tctypes.NewGenericActionBuiler().WithDrop().Build())
 }
 
+// genDefaultFilters generates default filters as follows:
+//  1. drop ip traffic
+//  2. drop ipv6 traffic
+//  3. drop 802.1Q ipv4 traffic
+//  4. drop 802.1Q ipv6 traffic
+func (s *SimpleTCGenerator) genDefaultFilters() []tctypes.Filter {
+	return s.genFilters(nil, nil, PrioDefault,
+		tctypes.NewGenericActionBuiler().WithDrop().Build())
+}
+
 // genFilters generates (flower) Filters based on provided ipCidrs, ports on the given prio with the given action
 // the filters generated are: matching on {ipCidrs} [X {Ports}] With priority `prio`, and action `action`
-// if no IPs and Ports provided, returned filters will match all ipv4, ipv6 traffic
+// if no IPs and Ports provided, returned filters will match all ipv4, ipv6, 802.1q traffic with provided action
+//
+//nolint:funlen
 func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules.Port, prio uint16,
 	action tctypes.Action) []tctypes.Filter {
 	hasIPs := len(ipCidrs) > 0
@@ -111,14 +127,15 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 	case hasIPs:
 		for _, ipCidr := range ipCidrs {
 			var proto tctypes.FilterProtocol
-			var actualPrio uint16
+			var ipProtoPrio uint16
+			var vlanPotoPrio = prio + 2
 
 			if utils.IsIPv4(ipCidr.IP) {
 				proto = tctypes.FilterProtocolIPv4
-				actualPrio = prio
+				ipProtoPrio = prio
 			} else {
 				proto = tctypes.FilterProtocolIPv6
-				actualPrio = prio + 1
+				ipProtoPrio = prio + 1
 			}
 
 			if hasPorts {
@@ -126,7 +143,18 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 					filters = append(filters,
 						tctypes.NewFlowerFilterBuilder().
 							WithProtocol(proto).
-							WithPriority(actualPrio).
+							WithPriority(ipProtoPrio).
+							WithMatchKeyDstIP(ipCidr.String()).
+							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyDstPort(port.Number).
+							WithAction(action).
+							Build())
+					// traffic may be tagged, add rule to match on tag traffic as well
+					filters = append(filters,
+						tctypes.NewFlowerFilterBuilder().
+							WithProtocol(tctypes.FilterProtocol8021Q).
+							WithPriority(vlanPotoPrio).
+							WithMatchKeyVlanEthType(tctypes.ProtoToVlanProto(proto)).
 							WithMatchKeyDstIP(ipCidr.String()).
 							WithMatchKeyIPProto(string(port.Protocol)).
 							WithMatchKeyDstPort(port.Number).
@@ -137,7 +165,16 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 				filters = append(filters,
 					tctypes.NewFlowerFilterBuilder().
 						WithProtocol(proto).
-						WithPriority(actualPrio).
+						WithPriority(ipProtoPrio).
+						WithMatchKeyDstIP(ipCidr.String()).
+						WithAction(action).
+						Build())
+				// traffic may be tagged, add rule to match on tag traffic as well
+				filters = append(filters,
+					tctypes.NewFlowerFilterBuilder().
+						WithProtocol(tctypes.FilterProtocol8021Q).
+						WithPriority(vlanPotoPrio).
+						WithMatchKeyVlanEthType(tctypes.ProtoToVlanProto(proto)).
 						WithMatchKeyDstIP(ipCidr.String()).
 						WithAction(action).
 						Build())
@@ -148,26 +185,67 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 			// match all protocols with given port
 			for idx, proto := range allProtocols {
 				actualPrio := prio + uint16(idx)
-				filters = append(filters,
-					tctypes.NewFlowerFilterBuilder().
-						WithProtocol(proto).
-						WithPriority(actualPrio).
-						WithMatchKeyIPProto(string(port.Protocol)).
-						WithMatchKeyDstPort(port.Number).
-						WithAction(action).
-						Build())
+
+				if proto == tctypes.FilterProtocol8021Q {
+					// for vlan protocol we need to match on both ipv4 and ipv6 vlan eth type
+					filters = append(filters,
+						tctypes.NewFlowerFilterBuilder().
+							WithProtocol(proto).
+							WithPriority(actualPrio).
+							WithMatchKeyVlanEthType("ip").
+							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyDstPort(port.Number).
+							WithAction(action).
+							Build())
+					filters = append(filters,
+						tctypes.NewFlowerFilterBuilder().
+							WithProtocol(proto).
+							WithPriority(actualPrio).
+							WithMatchKeyVlanEthType("ipv6").
+							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyDstPort(port.Number).
+							WithAction(action).
+							Build())
+				} else {
+					filters = append(filters,
+						tctypes.NewFlowerFilterBuilder().
+							WithProtocol(proto).
+							WithPriority(actualPrio).
+							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyDstPort(port.Number).
+							WithAction(action).
+							Build())
+				}
 			}
 		}
 	default:
 		// match all protocols with action
 		for idx, proto := range allProtocols {
 			actualPrio := prio + uint16(idx)
-			filters = append(filters,
-				tctypes.NewFlowerFilterBuilder().
-					WithProtocol(proto).
-					WithPriority(actualPrio).
-					WithAction(action).
-					Build())
+			if proto == tctypes.FilterProtocol8021Q {
+				// add for both ipv4 and ipv6 packets
+				filters = append(filters,
+					tctypes.NewFlowerFilterBuilder().
+						WithProtocol(proto).
+						WithPriority(actualPrio).
+						WithMatchKeyVlanEthType("ip").
+						WithAction(action).
+						Build())
+				filters = append(filters,
+					tctypes.NewFlowerFilterBuilder().
+						WithProtocol(proto).
+						WithPriority(actualPrio).
+						WithMatchKeyVlanEthType("ipv6").
+						WithAction(action).
+						Build())
+			} else {
+				filters = append(filters,
+					tctypes.NewFlowerFilterBuilder().
+						WithProtocol(proto).
+						WithPriority(actualPrio).
+						WithAction(action).
+						Build())
+			}
 		}
 	}
 
