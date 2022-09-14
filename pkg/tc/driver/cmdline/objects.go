@@ -26,9 +26,10 @@ type cFilterOptions struct {
 }
 
 type cFlowerKeys struct {
-	IPProto *string `json:"ip_proto,omitempty"`
-	DstIP   *string `json:"dst_ip,omitempty"`
-	DstPort *uint16 `json:"dst_port,omitempty"`
+	VlanEthType *string `json:"vlan_ethtype,omitempty"`
+	IPProto     *string `json:"ip_proto,omitempty"`
+	DstIP       *string `json:"dst_ip,omitempty"`
+	DstPort     *uint16 `json:"dst_port,omitempty"`
 }
 
 type cAction struct {
