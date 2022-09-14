@@ -70,7 +70,7 @@ var _ = Describe("Actuator file writer tests", Ordered, func() {
 		objs := &tc.Objects{
 			QDisc: ingressQdisc,
 			Filters: []types.Filter{
-				types.NewFlowerFilterBuilder().WithProtocol(types.FilterProtocolIP).WithPriority(100).Build(),
+				types.NewFlowerFilterBuilder().WithProtocol(types.FilterProtocolIPv4).WithPriority(100).Build(),
 			},
 		}
 		expectedFileContent := `qdisc: ingress

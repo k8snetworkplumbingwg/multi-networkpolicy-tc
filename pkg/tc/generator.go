@@ -4,16 +4,19 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/pkg/errors"
-
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
 	tctypes "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
 
 const (
 	PrioDefault = 300
 	PrioPass    = 200
 	PrioDrop    = 100
+)
+
+var (
+	allProtocols = [...]tctypes.FilterProtocol{tctypes.FilterProtocolIPv4, tctypes.FilterProtocolIPv6}
 )
 
 // Objects is a struct containing TC objects
@@ -65,30 +68,18 @@ func (s *SimpleTCGenerator) GenerateFromPolicyRuleSet(ruleSet policyrules.Policy
 	}
 
 	// create filters
-	// 1. default drop rule at priority 300
-	defaultDropFliter := tctypes.NewFlowerFilterBuilder().
-		WithPriority(PrioDefault).
-		WithProtocol(tctypes.FilterProtocolIP).
-		WithAction(tctypes.NewGenericActionBuiler().WithDrop().Build()).
-		Build()
-	tcObj.Filters = append(tcObj.Filters, defaultDropFliter)
+	// 1. default drop rule for supported protocols at priority 3xx
+	tcObj.Filters = append(tcObj.Filters, s.genFilters(nil, nil, PrioDefault,
+		tctypes.NewGenericActionBuiler().WithDrop().Build())...)
 
 	for _, rule := range ruleSet.Rules {
-		// 2. accept rules at priority 200
-		// 3. drop rules at priority 100
+		// 2. accept rules at priority 2xx
+		// 3. drop rules at priority 1xx
 		switch rule.Action {
 		case policyrules.PolicyActionPass:
-			passFilters, err := s.genPassFilters(rule)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to generate filters")
-			}
-			tcObj.Filters = append(tcObj.Filters, passFilters...)
+			tcObj.Filters = append(tcObj.Filters, s.genPassFilters(rule)...)
 		case policyrules.PolicyActionDrop:
-			dropFilters, err := s.genDropFilters(rule)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to generate filters")
-			}
-			tcObj.Filters = append(tcObj.Filters, dropFilters...)
+			tcObj.Filters = append(tcObj.Filters, s.genDropFilters(rule)...)
 		default:
 			// we should not get here
 			return nil, fmt.Errorf("unknown policy action for rule. %s", rule.Action)
@@ -98,19 +89,20 @@ func (s *SimpleTCGenerator) GenerateFromPolicyRuleSet(ruleSet policyrules.Policy
 }
 
 // genPassFilters generates Filters with Pass action
-func (s *SimpleTCGenerator) genPassFilters(rule policyrules.Rule) ([]tctypes.Filter, error) {
+func (s *SimpleTCGenerator) genPassFilters(rule policyrules.Rule) []tctypes.Filter {
 	return s.genFilters(rule.IPCidrs, rule.Ports, PrioPass, tctypes.NewGenericActionBuiler().WithPass().Build())
 }
 
 // genPassFilters generates Filters with Drop action
-func (s *SimpleTCGenerator) genDropFilters(rule policyrules.Rule) ([]tctypes.Filter, error) {
+func (s *SimpleTCGenerator) genDropFilters(rule policyrules.Rule) []tctypes.Filter {
 	return s.genFilters(rule.IPCidrs, rule.Ports, PrioDrop, tctypes.NewGenericActionBuiler().WithDrop().Build())
 }
 
 // genFilters generates (flower) Filters based on provided ipCidrs, ports on the given prio with the given action
 // the filters generated are: matching on {ipCidrs} [X {Ports}] With priority `prio`, and action `action`
+// if no IPs and Ports provided, returned filters will match all ipv4, ipv6 traffic
 func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules.Port, prio uint16,
-	action tctypes.Action) ([]tctypes.Filter, error) {
+	action tctypes.Action) []tctypes.Filter {
 	hasIPs := len(ipCidrs) > 0
 	hasPorts := len(ports) > 0
 	filters := make([]tctypes.Filter, 0)
@@ -118,12 +110,23 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 	switch {
 	case hasIPs:
 		for _, ipCidr := range ipCidrs {
+			var proto tctypes.FilterProtocol
+			var actualPrio uint16
+
+			if utils.IsIPv4(ipCidr.IP) {
+				proto = tctypes.FilterProtocolIPv4
+				actualPrio = prio
+			} else {
+				proto = tctypes.FilterProtocolIPv6
+				actualPrio = prio + 1
+			}
+
 			if hasPorts {
 				for _, port := range ports {
 					filters = append(filters,
 						tctypes.NewFlowerFilterBuilder().
-							WithProtocol(tctypes.FilterProtocolIP).
-							WithPriority(prio).
+							WithProtocol(proto).
+							WithPriority(actualPrio).
 							WithMatchKeyDstIP(ipCidr.String()).
 							WithMatchKeyIPProto(string(port.Protocol)).
 							WithMatchKeyDstPort(port.Number).
@@ -133,33 +136,40 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 			} else {
 				filters = append(filters,
 					tctypes.NewFlowerFilterBuilder().
-						WithProtocol(tctypes.FilterProtocolIP).
-						WithPriority(prio).
+						WithProtocol(proto).
+						WithPriority(actualPrio).
 						WithMatchKeyDstIP(ipCidr.String()).
 						WithAction(action).
 						Build())
 			}
 		}
-	case hasPorts:
+	case hasPorts: // ports without IPs
 		for _, port := range ports {
+			// match all protocols with given port
+			for idx, proto := range allProtocols {
+				actualPrio := prio + uint16(idx)
+				filters = append(filters,
+					tctypes.NewFlowerFilterBuilder().
+						WithProtocol(proto).
+						WithPriority(actualPrio).
+						WithMatchKeyIPProto(string(port.Protocol)).
+						WithMatchKeyDstPort(port.Number).
+						WithAction(action).
+						Build())
+			}
+		}
+	default:
+		// match all protocols with action
+		for idx, proto := range allProtocols {
+			actualPrio := prio + uint16(idx)
 			filters = append(filters,
 				tctypes.NewFlowerFilterBuilder().
-					WithProtocol(tctypes.FilterProtocolIP).
-					WithPriority(prio).
-					WithMatchKeyIPProto(string(port.Protocol)).
-					WithMatchKeyDstPort(port.Number).
+					WithProtocol(proto).
+					WithPriority(actualPrio).
 					WithAction(action).
 					Build())
 		}
-	default:
-		// match all with action
-		filters = append(filters,
-			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
-				WithPriority(prio).
-				WithAction(action).
-				Build())
 	}
 
-	return filters, nil
+	return filters
 }

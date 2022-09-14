@@ -19,14 +19,14 @@ var _ = Describe("FilterSetImpl tests", func() {
 		It("Adds filter to FilterSet", func() {
 			filters := []tctypes.Filter{
 				tctypes.NewFlowerFilterBuilder().
-					WithProtocol(tctypes.FilterProtocolIP).
+					WithProtocol(tctypes.FilterProtocolIPv4).
 					WithAction(
 						tctypes.NewGenericActionBuiler().
 							WithDrop().
 							Build()).
 					Build(),
 				tctypes.NewFlowerFilterBuilder().
-					WithProtocol(tctypes.FilterProtocolIP).
+					WithProtocol(tctypes.FilterProtocolIPv4).
 					WithAction(
 						tctypes.NewGenericActionBuiler().
 							WithPass().
@@ -44,7 +44,7 @@ var _ = Describe("FilterSetImpl tests", func() {
 
 		It("Does not add an already existing filter to FilterSet", func() {
 			filter := tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithAction(
 					tctypes.NewGenericActionBuiler().WithDrop().Build()).
 				Build()
@@ -61,7 +61,7 @@ var _ = Describe("FilterSetImpl tests", func() {
 	Context("FilterSet.Remove()", func() {
 		It("removes filter from set if exists", func() {
 			filter := tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithDrop().
@@ -75,7 +75,7 @@ var _ = Describe("FilterSetImpl tests", func() {
 
 		It("does not remove filter from set if does not exist", func() {
 			filterToAdd := tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithDrop().
@@ -101,7 +101,7 @@ var _ = Describe("FilterSetImpl tests", func() {
 
 		BeforeEach(func() {
 			filter = tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithMatchKeyDstIP("192.168.1.2").
 				Build()
 			filterSet.Add(filter)
@@ -113,7 +113,7 @@ var _ = Describe("FilterSetImpl tests", func() {
 
 		It("returns false if Filter no in set", func() {
 			otherFilter := tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithMatchKeyDstIP("192.168.2.2").
 				Build()
 			Expect(filterSet.Has(otherFilter)).To(BeFalse())
@@ -128,7 +128,7 @@ var _ = Describe("FilterSetImpl tests", func() {
 		It("returns number of filters in set", func() {
 			filters := []tctypes.Filter{
 				tctypes.NewFlowerFilterBuilder().
-					WithProtocol(tctypes.FilterProtocolIP).
+					WithProtocol(tctypes.FilterProtocolIPv4).
 					Build(),
 				tctypes.NewFlowerFilterBuilder().
 					WithProtocol(tctypes.FilterProtocolAll).
@@ -146,21 +146,21 @@ var _ = Describe("FilterSetImpl tests", func() {
 		var other tc.FilterSet
 		filters := []tctypes.Filter{
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithDrop().
 						Build()).
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithPass().
 						Build()).
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithMatchKeyDstIP("192.168.1.1").
 				WithAction(
 					tctypes.NewGenericActionBuiler().
@@ -240,21 +240,21 @@ var _ = Describe("FilterSetImpl tests", func() {
 		var other tc.FilterSet
 		filters := []tctypes.Filter{
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithDrop().
 						Build()).
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithPass().
 						Build()).
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithMatchKeyDstIP("192.168.1.1").
 				WithAction(
 					tctypes.NewGenericActionBuiler().
@@ -335,21 +335,21 @@ var _ = Describe("FilterSetImpl tests", func() {
 		var other tc.FilterSet
 		filters := []tctypes.Filter{
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithDrop().
 						Build()).
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithPass().
 						Build()).
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithMatchKeyDstIP("192.168.1.1").
 				WithAction(
 					tctypes.NewGenericActionBuiler().
@@ -435,21 +435,21 @@ var _ = Describe("FilterSetImpl tests", func() {
 		var other tc.FilterSet
 		filters := []tctypes.Filter{
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithDrop().
 						Build()).
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithPass().
 						Build()).
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
-				WithProtocol(tctypes.FilterProtocolIP).
+				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithMatchKeyDstIP("192.168.1.1").
 				WithAction(
 					tctypes.NewGenericActionBuiler().
@@ -501,7 +501,7 @@ var _ = Describe("FilterSetImpl tests", func() {
 		})
 
 		It("returns the number of filters in set", func() {
-			filterSet.Add(tctypes.NewFlowerFilterBuilder().WithProtocol(tctypes.FilterProtocolIP).Build())
+			filterSet.Add(tctypes.NewFlowerFilterBuilder().WithProtocol(tctypes.FilterProtocolIPv4).Build())
 			filterSet.Add(tctypes.NewFlowerFilterBuilder().WithProtocol(tctypes.FilterProtocolAll).Build())
 
 			Expect(filterSet.Len()).To(Equal(2))
