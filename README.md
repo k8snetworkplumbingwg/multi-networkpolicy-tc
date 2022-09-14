@@ -108,7 +108,6 @@ As this project is under active development, there are several limitations which
 in the near future.
 
 - MultiNetworkPolicy Ingress rules are not supported. Ingress policy will not be enforced
-- VLAN tagged traffic is not supported network policy will not be enforced
 - QinQ traffic is not supported network policy will not be enforced
 
 ## Contributing
