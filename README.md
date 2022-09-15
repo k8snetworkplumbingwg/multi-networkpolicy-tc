@@ -105,11 +105,9 @@ The following configuration flags are supported by `multi-networkpolicy-tc`:
 ## Limitations
 
 As this project is under active development, there are several limitations which are planned to be addressed
-in the near future.
+in the future.
 
 - MultiNetworkPolicy Ingress rules are not supported. Ingress policy will not be enforced
-- VLAN tagged traffic is not supported network policy will not be enforced
-- QinQ traffic is not supported network policy will not be enforced
 
 ## Contributing
 
