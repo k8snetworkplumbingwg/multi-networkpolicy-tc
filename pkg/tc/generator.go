@@ -20,6 +20,7 @@ var (
 		tctypes.FilterProtocolIPv4,
 		tctypes.FilterProtocolIPv6,
 		tctypes.FilterProtocol8021Q,
+		tctypes.FilterProtocol8021AD,
 	}
 )
 
@@ -129,6 +130,7 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 			var proto tctypes.FilterProtocol
 			var ipProtoPrio uint16
 			var vlanPotoPrio = prio + 2
+			var vlanQinQPotoPrio = prio + 3
 
 			if utils.IsIPv4(ipCidr.IP) {
 				proto = tctypes.FilterProtocolIPv4
@@ -160,6 +162,18 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 							WithMatchKeyDstPort(port.Number).
 							WithAction(action).
 							Build())
+					// traffic may be tagged QinQ, add rule to match on inner vlan tag traffic as well
+					filters = append(filters,
+						tctypes.NewFlowerFilterBuilder().
+							WithProtocol(tctypes.FilterProtocol8021AD).
+							WithPriority(vlanQinQPotoPrio).
+							WithMatchKeyVlanEthType("802.1Q").
+							WithMatchKeyCVlanEthType(tctypes.ProtoToVlanProto(proto)).
+							WithMatchKeyDstIP(ipCidr.String()).
+							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyDstPort(port.Number).
+							WithAction(action).
+							Build())
 				}
 			} else {
 				filters = append(filters,
@@ -178,6 +192,16 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 						WithMatchKeyDstIP(ipCidr.String()).
 						WithAction(action).
 						Build())
+				// traffic may be tagged QinQ, add rule to match on inner vlan tag traffic as well
+				filters = append(filters,
+					tctypes.NewFlowerFilterBuilder().
+						WithProtocol(tctypes.FilterProtocol8021AD).
+						WithPriority(vlanQinQPotoPrio).
+						WithMatchKeyVlanEthType("802.1Q").
+						WithMatchKeyCVlanEthType(tctypes.ProtoToVlanProto(proto)).
+						WithMatchKeyDstIP(ipCidr.String()).
+						WithAction(action).
+						Build())
 			}
 		}
 	case hasPorts: // ports without IPs
@@ -186,8 +210,9 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 			for idx, proto := range allProtocols {
 				actualPrio := prio + uint16(idx)
 
-				if proto == tctypes.FilterProtocol8021Q {
-					// for vlan protocol we need to match on both ipv4 and ipv6 vlan eth type
+				switch proto {
+				case tctypes.FilterProtocol8021Q:
+					// for vlan protocol we need to match on both ipv4 and ipv6 eeth types
 					filters = append(filters,
 						tctypes.NewFlowerFilterBuilder().
 							WithProtocol(proto).
@@ -206,7 +231,29 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 							WithMatchKeyDstPort(port.Number).
 							WithAction(action).
 							Build())
-				} else {
+				case tctypes.FilterProtocol8021AD:
+					// for QinQ protocol we need to match on inner 802.1Q with both ipv4 and ipv6 eth types
+					filters = append(filters,
+						tctypes.NewFlowerFilterBuilder().
+							WithProtocol(proto).
+							WithPriority(actualPrio).
+							WithMatchKeyVlanEthType("802.1Q").
+							WithMatchKeyCVlanEthType("ip").
+							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyDstPort(port.Number).
+							WithAction(action).
+							Build())
+					filters = append(filters,
+						tctypes.NewFlowerFilterBuilder().
+							WithProtocol(proto).
+							WithPriority(actualPrio).
+							WithMatchKeyVlanEthType("802.1Q").
+							WithMatchKeyCVlanEthType("ipv6").
+							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyDstPort(port.Number).
+							WithAction(action).
+							Build())
+				default:
 					filters = append(filters,
 						tctypes.NewFlowerFilterBuilder().
 							WithProtocol(proto).
@@ -222,8 +269,10 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 		// match all protocols with action
 		for idx, proto := range allProtocols {
 			actualPrio := prio + uint16(idx)
-			if proto == tctypes.FilterProtocol8021Q {
-				// add for both ipv4 and ipv6 packets
+
+			switch proto {
+			case tctypes.FilterProtocol8021Q:
+				// for vlan protocol we need to match on both ipv4 and ipv6 eeth types
 				filters = append(filters,
 					tctypes.NewFlowerFilterBuilder().
 						WithProtocol(proto).
@@ -238,7 +287,25 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 						WithMatchKeyVlanEthType("ipv6").
 						WithAction(action).
 						Build())
-			} else {
+			case tctypes.FilterProtocol8021AD:
+				// for QinQ protocol we need to match on inner 802.1Q with both ipv4 and ipv6 eth types
+				filters = append(filters,
+					tctypes.NewFlowerFilterBuilder().
+						WithProtocol(proto).
+						WithPriority(actualPrio).
+						WithMatchKeyVlanEthType("802.1Q").
+						WithMatchKeyCVlanEthType("ip").
+						WithAction(action).
+						Build())
+				filters = append(filters,
+					tctypes.NewFlowerFilterBuilder().
+						WithProtocol(proto).
+						WithPriority(actualPrio).
+						WithMatchKeyVlanEthType("802.1Q").
+						WithMatchKeyCVlanEthType("ipv6").
+						WithAction(action).
+						Build())
+			default:
 				filters = append(filters,
 					tctypes.NewFlowerFilterBuilder().
 						WithProtocol(proto).

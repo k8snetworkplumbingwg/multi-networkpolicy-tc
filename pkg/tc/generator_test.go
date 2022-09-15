@@ -87,6 +87,20 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 			WithMatchKeyVlanEthType("ipv6").
 			WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
 			Build(),
+		types.NewFlowerFilterBuilder().
+			WithPriority(tc.PrioDefault + 3).
+			WithProtocol(types.FilterProtocol8021AD).
+			WithMatchKeyVlanEthType("802.1Q").
+			WithMatchKeyCVlanEthType("ip").
+			WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
+			Build(),
+		types.NewFlowerFilterBuilder().
+			WithPriority(tc.PrioDefault + 3).
+			WithProtocol(types.FilterProtocol8021AD).
+			WithMatchKeyVlanEthType("802.1Q").
+			WithMatchKeyCVlanEthType("ipv6").
+			WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
+			Build(),
 	}
 
 	BeforeEach(func() {
@@ -191,6 +205,15 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 							WithMatchKeyDstIP(ip.String()).
 							WithAction(types.NewGenericActionBuiler().WithPass().Build()).
 							Build())
+					expectedFilters.Add(
+						types.NewFlowerFilterBuilder().
+							WithPriority(tc.PrioPass + 3).
+							WithProtocol(types.FilterProtocol8021AD).
+							WithMatchKeyVlanEthType("802.1Q").
+							WithMatchKeyCVlanEthType(types.ProtoToVlanProto(proto)).
+							WithMatchKeyDstIP(ip.String()).
+							WithAction(types.NewGenericActionBuiler().WithPass().Build()).
+							Build())
 				}
 
 				filtersEqual(actualFilters, expectedFilters)
@@ -245,6 +268,26 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 							WithMatchKeyDstPort(port.Number).
 							WithAction(types.NewGenericActionBuiler().WithPass().Build()).
 							Build())
+					expectedFilters.Add(
+						types.NewFlowerFilterBuilder().
+							WithPriority(tc.PrioPass + 3).
+							WithProtocol(types.FilterProtocol8021AD).
+							WithMatchKeyVlanEthType("802.1Q").
+							WithMatchKeyCVlanEthType("ip").
+							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyDstPort(port.Number).
+							WithAction(types.NewGenericActionBuiler().WithPass().Build()).
+							Build())
+					expectedFilters.Add(
+						types.NewFlowerFilterBuilder().
+							WithPriority(tc.PrioPass + 3).
+							WithProtocol(types.FilterProtocol8021AD).
+							WithMatchKeyVlanEthType("802.1Q").
+							WithMatchKeyCVlanEthType("ipv6").
+							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyDstPort(port.Number).
+							WithAction(types.NewGenericActionBuiler().WithPass().Build()).
+							Build())
 				}
 
 				filtersEqual(actualFilters, expectedFilters)
@@ -283,6 +326,17 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 								WithPriority(tc.PrioPass + 2).
 								WithProtocol(types.FilterProtocol8021Q).
 								WithMatchKeyVlanEthType(types.ProtoToVlanProto(proto)).
+								WithMatchKeyDstIP(ip.String()).
+								WithMatchKeyIPProto(string(port.Protocol)).
+								WithMatchKeyDstPort(port.Number).
+								WithAction(types.NewGenericActionBuiler().WithPass().Build()).
+								Build())
+						expectedFilters.Add(
+							types.NewFlowerFilterBuilder().
+								WithPriority(tc.PrioPass + 3).
+								WithProtocol(types.FilterProtocol8021AD).
+								WithMatchKeyVlanEthType("802.1Q").
+								WithMatchKeyCVlanEthType(types.ProtoToVlanProto(proto)).
 								WithMatchKeyDstIP(ip.String()).
 								WithMatchKeyIPProto(string(port.Protocol)).
 								WithMatchKeyDstPort(port.Number).
@@ -329,6 +383,20 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 					WithMatchKeyVlanEthType("ipv6").
 					WithAction(types.NewGenericActionBuiler().WithPass().Build()).
 					Build())
+				expectedFilters.Add(types.NewFlowerFilterBuilder().
+					WithPriority(tc.PrioPass + 3).
+					WithProtocol(types.FilterProtocol8021AD).
+					WithMatchKeyVlanEthType("802.1Q").
+					WithMatchKeyCVlanEthType("ip").
+					WithAction(types.NewGenericActionBuiler().WithPass().Build()).
+					Build())
+				expectedFilters.Add(types.NewFlowerFilterBuilder().
+					WithPriority(tc.PrioPass + 3).
+					WithProtocol(types.FilterProtocol8021AD).
+					WithMatchKeyVlanEthType("802.1Q").
+					WithMatchKeyCVlanEthType("ipv6").
+					WithAction(types.NewGenericActionBuiler().WithPass().Build()).
+					Build())
 
 				filtersEqual(actualFilters, expectedFilters)
 			})
@@ -362,6 +430,15 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 							WithPriority(tc.PrioDrop + 2).
 							WithProtocol(types.FilterProtocol8021Q).
 							WithMatchKeyVlanEthType(types.ProtoToVlanProto(proto)).
+							WithMatchKeyDstIP(ip.String()).
+							WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
+							Build())
+					expectedFilters.Add(
+						types.NewFlowerFilterBuilder().
+							WithPriority(tc.PrioDrop + 3).
+							WithProtocol(types.FilterProtocol8021AD).
+							WithMatchKeyVlanEthType("802.1Q").
+							WithMatchKeyCVlanEthType(types.ProtoToVlanProto(proto)).
 							WithMatchKeyDstIP(ip.String()).
 							WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
 							Build())
@@ -419,6 +496,26 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 							WithMatchKeyDstPort(port.Number).
 							WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
 							Build())
+					expectedFilters.Add(
+						types.NewFlowerFilterBuilder().
+							WithPriority(tc.PrioDrop + 3).
+							WithProtocol(types.FilterProtocol8021AD).
+							WithMatchKeyVlanEthType("802.1Q").
+							WithMatchKeyCVlanEthType("ip").
+							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyDstPort(port.Number).
+							WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
+							Build())
+					expectedFilters.Add(
+						types.NewFlowerFilterBuilder().
+							WithPriority(tc.PrioDrop + 3).
+							WithProtocol(types.FilterProtocol8021AD).
+							WithMatchKeyVlanEthType("802.1Q").
+							WithMatchKeyCVlanEthType("ipv6").
+							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyDstPort(port.Number).
+							WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
+							Build())
 				}
 
 				filtersEqual(actualFilters, expectedFilters)
@@ -457,6 +554,17 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 								WithPriority(tc.PrioDrop + 2).
 								WithProtocol(types.FilterProtocol8021Q).
 								WithMatchKeyVlanEthType(types.ProtoToVlanProto(proto)).
+								WithMatchKeyDstIP(ip.String()).
+								WithMatchKeyIPProto(string(port.Protocol)).
+								WithMatchKeyDstPort(port.Number).
+								WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
+								Build())
+						expectedFilters.Add(
+							types.NewFlowerFilterBuilder().
+								WithPriority(tc.PrioDrop + 3).
+								WithProtocol(types.FilterProtocol8021AD).
+								WithMatchKeyVlanEthType("802.1Q").
+								WithMatchKeyCVlanEthType(types.ProtoToVlanProto(proto)).
 								WithMatchKeyDstIP(ip.String()).
 								WithMatchKeyIPProto(string(port.Protocol)).
 								WithMatchKeyDstPort(port.Number).
@@ -501,6 +609,20 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 					WithPriority(tc.PrioDrop + 2).
 					WithProtocol(types.FilterProtocol8021Q).
 					WithMatchKeyVlanEthType("ipv6").
+					WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
+					Build())
+				expectedFilters.Add(types.NewFlowerFilterBuilder().
+					WithPriority(tc.PrioDrop + 3).
+					WithProtocol(types.FilterProtocol8021AD).
+					WithMatchKeyVlanEthType("802.1Q").
+					WithMatchKeyCVlanEthType("ip").
+					WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
+					Build())
+				expectedFilters.Add(types.NewFlowerFilterBuilder().
+					WithPriority(tc.PrioDrop + 3).
+					WithProtocol(types.FilterProtocol8021AD).
+					WithMatchKeyVlanEthType("802.1Q").
+					WithMatchKeyCVlanEthType("ipv6").
 					WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
 					Build())
 
@@ -550,6 +672,17 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 						Build())
 				expectedFilters.Add(
 					types.NewFlowerFilterBuilder().
+						WithPriority(tc.PrioPass + 3).
+						WithProtocol(types.FilterProtocol8021AD).
+						WithMatchKeyVlanEthType("802.1Q").
+						WithMatchKeyCVlanEthType("ip").
+						WithMatchKeyDstIP(ips[0].String()).
+						WithMatchKeyIPProto(string(ports[0].Protocol)).
+						WithMatchKeyDstPort(ports[0].Number).
+						WithAction(types.NewGenericActionBuiler().WithPass().Build()).
+						Build())
+				expectedFilters.Add(
+					types.NewFlowerFilterBuilder().
 						WithPriority(tc.PrioDrop + 1).
 						WithProtocol(types.FilterProtocolIPv6).
 						WithMatchKeyDstIP(ips[2].String()).
@@ -562,6 +695,17 @@ var _ = Describe("SimpleTCGenerator tests", func() {
 						WithPriority(tc.PrioDrop + 2).
 						WithProtocol(types.FilterProtocol8021Q).
 						WithMatchKeyVlanEthType("ipv6").
+						WithMatchKeyDstIP(ips[2].String()).
+						WithMatchKeyIPProto(string(ports[1].Protocol)).
+						WithMatchKeyDstPort(ports[1].Number).
+						WithAction(types.NewGenericActionBuiler().WithDrop().Build()).
+						Build())
+				expectedFilters.Add(
+					types.NewFlowerFilterBuilder().
+						WithPriority(tc.PrioDrop + 3).
+						WithProtocol(types.FilterProtocol8021AD).
+						WithMatchKeyVlanEthType("802.1Q").
+						WithMatchKeyCVlanEthType("ipv6").
 						WithMatchKeyDstIP(ips[2].String()).
 						WithMatchKeyIPProto(string(ports[1].Protocol)).
 						WithMatchKeyDstPort(ports[1].Number).
