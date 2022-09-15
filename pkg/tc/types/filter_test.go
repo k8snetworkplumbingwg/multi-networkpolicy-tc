@@ -51,6 +51,16 @@ var _ = Describe("Filter tests", func() {
 		WithMatchKeyDstPort(6666).
 		WithAction(passAction).
 		Build()
+	testFilterQinQ := types.NewFlowerFilterBuilder().
+		WithProtocol(types.FilterProtocol8021AD).
+		WithPriority(100).
+		WithChain(0).
+		WithHandle(1).
+		WithMatchKeyVlanEthType("802.1q").
+		WithMatchKeyCVlanEthType("ip").
+		WithMatchKeyDstIP("10.10.10.10/24").
+		WithAction(passAction).
+		Build()
 
 	Describe("Creational", func() {
 		Context("FlowerFilterBuilder", func() {
@@ -70,6 +80,13 @@ var _ = Describe("Filter tests", func() {
 				Expect(testFilterVlanIPv4.Protocol).To(Equal(types.FilterProtocol8021Q))
 				Expect(testFilterVlanIPv4.Flower).ToNot(BeNil())
 				Expect(*testFilterVlanIPv4.Flower.VlanEthType).To(Equal("ip"))
+			})
+
+			It("Builds FlowerFilter with correct attributes for QinQ Protocol", func() {
+				Expect(testFilterQinQ.Protocol).To(Equal(types.FilterProtocol8021AD))
+				Expect(testFilterQinQ.Flower).ToNot(BeNil())
+				Expect(*testFilterQinQ.Flower.VlanEthType).To(Equal("802.1q"))
+				Expect(*testFilterQinQ.Flower.CVlanEthType).To(Equal("ip"))
 			})
 		})
 	})
@@ -143,6 +160,22 @@ var _ = Describe("Filter tests", func() {
 					Build()
 				Expect(filter1.Equals(filter2)).To(BeFalse())
 			})
+
+			It("returns false if filters are not equal - qinq protocol, different cvlan ethtype", func() {
+				filter1 := types.NewFlowerFilterBuilder().
+					WithProtocol(types.FilterProtocol8021AD).
+					WithMatchKeyVlanEthType("802.1q").
+					WithMatchKeyCVlanEthType("ip").
+					WithAction(passAction).
+					Build()
+				filter2 := types.NewFlowerFilterBuilder().
+					WithProtocol(types.FilterProtocol8021AD).
+					WithMatchKeyVlanEthType("802.1q").
+					WithMatchKeyCVlanEthType("ipv6").
+					WithAction(passAction).
+					Build()
+				Expect(filter1.Equals(filter2)).To(BeFalse())
+			})
 		})
 
 		Context("CmdLineGenerator", func() {
@@ -174,6 +207,14 @@ var _ = Describe("Filter tests", func() {
 					"vlan_ethtype", "ipv6", "ip_proto", "tcp", "dst_ip", "2001::/112", "dst_port", "6666",
 					"action", "gact", "pass"}
 				Expect(testFilterVlanIPv6.GenCmdLineArgs()).To(Equal(expectedArgs))
+			})
+
+			It("generates expected command line args - qinq inner vlan with ipv4", func() {
+				expectedArgs := []string{
+					"protocol", "802.1ad", "handle", "1", "chain", "0", "pref", "100", "flower",
+					"vlan_ethtype", "802.1q", "cvlan_ethtype", "ip", "dst_ip", "10.10.10.10/24",
+					"action", "gact", "pass"}
+				Expect(testFilterQinQ.GenCmdLineArgs()).To(Equal(expectedArgs))
 			})
 		})
 	})

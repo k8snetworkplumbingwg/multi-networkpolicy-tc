@@ -7,19 +7,21 @@ import (
 
 const (
 	// Values for FilterAttrs.Protocol
-	FilterProtocolAll   FilterProtocol = "all"
-	FilterProtocolIPv4  FilterProtocol = "ip"
-	FilterProtocolIPv6  FilterProtocol = "ipv6"
-	FilterProtocol8021Q FilterProtocol = "802.1Q"
+	FilterProtocolAll    FilterProtocol = "all"
+	FilterProtocolIPv4   FilterProtocol = "ip"
+	FilterProtocolIPv6   FilterProtocol = "ipv6"
+	FilterProtocol8021Q  FilterProtocol = "802.1Q"
+	FilterProtocol8021AD FilterProtocol = "802.1ad"
 
 	// FlowerFilter.Kind
 	FilterKindFlower FilterKind = "flower"
 
 	// FlowerKeys
-	FlowerKeyIPProto     FlowerKey = "ip_proto"
-	FlowerKeyDstIP       FlowerKey = "dst_ip"
-	FlowerKeyDstPort     FlowerKey = "dst_port"
-	FlowerKeyVlanEthType FlowerKey = "vlan_ethtype"
+	FlowerKeyIPProto      FlowerKey = "ip_proto"
+	FlowerKeyDstIP        FlowerKey = "dst_ip"
+	FlowerKeyDstPort      FlowerKey = "dst_port"
+	FlowerKeyVlanEthType  FlowerKey = "vlan_ethtype"
+	FlowerKeyCVlanEthType FlowerKey = "cvlan_ethtype"
 )
 
 // FilterProtocol is the type of filter protocol
@@ -117,10 +119,11 @@ func (fa *FilterAttrs) Equals(other *FilterAttrs) bool {
 
 // FlowerSpec holds flower filter specification (which consists of a list of Match)
 type FlowerSpec struct {
-	VlanEthType *string
-	IPProto     *string
-	DstIP       *string
-	DstPort     *uint16
+	VlanEthType  *string
+	CVlanEthType *string
+	IPProto      *string
+	DstIP        *string
+	DstPort      *uint16
 }
 
 // GenCmdLineArgs implements CmdLineGenerator interface, it generates the needed tc command line args for FlowerSpec
@@ -133,6 +136,10 @@ func (ff *FlowerSpec) GenCmdLineArgs() []string {
 
 	if ff.VlanEthType != nil {
 		args = append(args, string(FlowerKeyVlanEthType), *ff.VlanEthType)
+	}
+
+	if ff.CVlanEthType != nil {
+		args = append(args, string(FlowerKeyCVlanEthType), *ff.CVlanEthType)
 	}
 
 	if ff.IPProto != nil {
@@ -162,6 +169,9 @@ func (ff *FlowerSpec) Equals(other *FlowerSpec) bool {
 
 	// same Key/val
 	if !compare(ff.VlanEthType, other.VlanEthType, nil) {
+		return false
+	}
+	if !compare(ff.CVlanEthType, other.CVlanEthType, nil) {
 		return false
 	}
 	if !compare(ff.IPProto, other.IPProto, nil) {
@@ -341,6 +351,13 @@ func (fb *FlowerFilterBuilder) WithPriority(p uint16) *FlowerFilterBuilder {
 func (fb *FlowerFilterBuilder) WithMatchKeyVlanEthType(val string) *FlowerFilterBuilder {
 	lower := strings.ToLower(val)
 	fb.flowerFilter.Flower.VlanEthType = &lower
+	return fb
+}
+
+// WithMatchKeyCVlanEthType adds Match with FlowerKeyCVlanEthType key and specified value to FlowerFilterBuilder
+func (fb *FlowerFilterBuilder) WithMatchKeyCVlanEthType(val string) *FlowerFilterBuilder {
+	lower := strings.ToLower(val)
+	fb.flowerFilter.Flower.CVlanEthType = &lower
 	return fb
 }
 
