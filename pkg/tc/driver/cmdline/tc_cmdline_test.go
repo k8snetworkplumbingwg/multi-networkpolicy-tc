@@ -409,4 +409,50 @@ var _ = Describe("TC Cmdline driver tests", func() {
 			Expect(filters).To(BeNil())
 		})
 	})
+
+	Context("filterList with 802.1Q filter", func() {
+		var fakeCmd *testingexec.FakeCmd
+		ingressQdisc := tctypes.NewIngressQDiscBuilder().Build()
+		expectedCmdArgs := []string{"tc", "-json", "filter", "list", "dev", fakeNetDev}
+		expectedCmdArgs = append(expectedCmdArgs, ingressQdisc.GenCmdLineArgs()...)
+		filterListOut := `[
+  {
+    "protocol": "802.1Q",
+    "pref": 200,
+    "kind": "flower",
+    "chain": 0,
+    "options": {
+      "handle": 1,
+      "keys": {
+		"vlan_ethtype": "ip",
+        "eth_type": "ipv4"
+      },
+      "in_hw": true,
+      "in_hw_count": 1
+    }
+  }
+]`
+
+		BeforeEach(func() {
+			fakeCmd = fakeExec.AddFakeCmd()
+		})
+
+		It("returns expected filter", func() {
+			fakeCmd.OutputScript = append(fakeCmd.OutputScript, newFakeAction([]byte(filterListOut), nil, nil))
+			expectedFilter := tctypes.NewFlowerFilterBuilder().
+				WithProtocol(tctypes.FilterProtocol8021Q).
+				WithMatchKeyVlanEthType("ip").
+				WithPriority(200).
+				WithHandle(1).
+				WithChain(0).
+				Build()
+
+			filters, err := tcCmdLine.FilterList(ingressQdisc)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(fakeCmd.Argv).To(BeEquivalentTo(expectedCmdArgs))
+			Expect(filters).To(HaveLen(1))
+			Expect(filters[0].Equals(expectedFilter)).To(BeTrue())
+		})
+	})
 })

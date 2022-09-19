@@ -150,6 +150,9 @@ func (t *TcCmdLineImpl) FilterList(qdisc types.QDisc) ([]types.Filter, error) {
 			WithPriority(f.Priority).
 			WithHandle(f.Options.Handle)
 
+		if f.Options.Keys.VlanEthType != nil {
+			fb.WithMatchKeyVlanEthType(*f.Options.Keys.VlanEthType)
+		}
 		if f.Options.Keys.IPProto != nil {
 			fb.WithMatchKeyIPProto(*f.Options.Keys.IPProto)
 		}
