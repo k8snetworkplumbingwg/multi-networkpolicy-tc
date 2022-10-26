@@ -1,5 +1,9 @@
 package types
 
+import (
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
+)
+
 // compare first with second. They are equal if:
 //  1. first and second point to the same address (nil or otherwise)
 //  2. first and second contain the same value
@@ -26,15 +30,29 @@ func compare[C comparable](first *C, second *C, nilVal *C) bool {
 	return false
 }
 
-// ProtoToVlanProto converts FilterProtocol to VLAN ethtype, returns "" if conversion is invalid.
-func ProtoToVlanProto(proto FilterProtocol) string {
-	var vlanProto string
+// ProtoToFlowerVlanEthType converts FilterProtocol to FlowerVlanEthType, returns "" if conversion is invalid.
+func ProtoToFlowerVlanEthType(proto FilterProtocol) FlowerVlanEthType {
+	var vlanEthType FlowerVlanEthType
 
 	switch proto {
 	case FilterProtocolIPv4:
-		vlanProto = "ip"
+		vlanEthType = FlowerVlanEthTypeIPv4
 	case FilterProtocolIPv6:
-		vlanProto = "ipv6"
+		vlanEthType = FlowerVlanEthTypeIPv6
 	}
-	return vlanProto
+	return vlanEthType
+}
+
+// PortProtocolToFlowerIPProto converts policyrules.PolicyPortProtocol to FlowerIPProto,
+// returns "" if conversion is invalid.
+func PortProtocolToFlowerIPProto(proto policyrules.PolicyPortProtocol) FlowerIPProto {
+	var ipProto FlowerIPProto
+
+	switch proto {
+	case policyrules.ProtocolTCP:
+		ipProto = FlowerIPProtoTCP
+	case policyrules.ProtocolUDP:
+		ipProto = FlowerIPProtoUDP
+	}
+	return ipProto
 }
