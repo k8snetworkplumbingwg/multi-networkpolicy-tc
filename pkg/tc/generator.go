@@ -145,7 +145,7 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 							WithProtocol(proto).
 							WithPriority(ipProtoPrio).
 							WithMatchKeyDstIP(ipCidr.String()).
-							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyIPProto(tctypes.PortProtocolToFlowerIPProto(port.Protocol)).
 							WithMatchKeyDstPort(port.Number).
 							WithAction(action).
 							Build())
@@ -154,9 +154,9 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 						tctypes.NewFlowerFilterBuilder().
 							WithProtocol(tctypes.FilterProtocol8021Q).
 							WithPriority(vlanProtoPrio).
-							WithMatchKeyVlanEthType(tctypes.ProtoToVlanProto(proto)).
+							WithMatchKeyVlanEthType(tctypes.ProtoToFlowerVlanEthType(proto)).
 							WithMatchKeyDstIP(ipCidr.String()).
-							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyIPProto(tctypes.PortProtocolToFlowerIPProto(port.Protocol)).
 							WithMatchKeyDstPort(port.Number).
 							WithAction(action).
 							Build())
@@ -174,7 +174,7 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 					tctypes.NewFlowerFilterBuilder().
 						WithProtocol(tctypes.FilterProtocol8021Q).
 						WithPriority(vlanProtoPrio).
-						WithMatchKeyVlanEthType(tctypes.ProtoToVlanProto(proto)).
+						WithMatchKeyVlanEthType(tctypes.ProtoToFlowerVlanEthType(proto)).
 						WithMatchKeyDstIP(ipCidr.String()).
 						WithAction(action).
 						Build())
@@ -192,8 +192,8 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 						tctypes.NewFlowerFilterBuilder().
 							WithProtocol(proto).
 							WithPriority(actualPrio).
-							WithMatchKeyVlanEthType("ip").
-							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyVlanEthType(tctypes.FlowerVlanEthTypeIPv4).
+							WithMatchKeyIPProto(tctypes.PortProtocolToFlowerIPProto(port.Protocol)).
 							WithMatchKeyDstPort(port.Number).
 							WithAction(action).
 							Build())
@@ -201,8 +201,8 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 						tctypes.NewFlowerFilterBuilder().
 							WithProtocol(proto).
 							WithPriority(actualPrio).
-							WithMatchKeyVlanEthType("ipv6").
-							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyVlanEthType(tctypes.FlowerVlanEthTypeIPv6).
+							WithMatchKeyIPProto(tctypes.PortProtocolToFlowerIPProto(port.Protocol)).
 							WithMatchKeyDstPort(port.Number).
 							WithAction(action).
 							Build())
@@ -211,7 +211,7 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 						tctypes.NewFlowerFilterBuilder().
 							WithProtocol(proto).
 							WithPriority(actualPrio).
-							WithMatchKeyIPProto(string(port.Protocol)).
+							WithMatchKeyIPProto(tctypes.PortProtocolToFlowerIPProto(port.Protocol)).
 							WithMatchKeyDstPort(port.Number).
 							WithAction(action).
 							Build())
@@ -228,14 +228,14 @@ func (s *SimpleTCGenerator) genFilters(ipCidrs []*net.IPNet, ports []policyrules
 					tctypes.NewFlowerFilterBuilder().
 						WithProtocol(proto).
 						WithPriority(actualPrio).
-						WithMatchKeyVlanEthType("ip").
+						WithMatchKeyVlanEthType(tctypes.FlowerVlanEthTypeIPv4).
 						WithAction(action).
 						Build())
 				filters = append(filters,
 					tctypes.NewFlowerFilterBuilder().
 						WithProtocol(proto).
 						WithPriority(actualPrio).
-						WithMatchKeyVlanEthType("ipv6").
+						WithMatchKeyVlanEthType(tctypes.FlowerVlanEthTypeIPv6).
 						WithAction(action).
 						Build())
 			} else {
