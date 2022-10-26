@@ -15,7 +15,7 @@ var _ = Describe("Filter tests", func() {
 		WithChain(0).
 		WithHandle(1).
 		WithMatchKeyDstIP("10.10.10.10/24").
-		WithMatchKeyIPProto("tcp").
+		WithMatchKeyIPProto(types.FlowerIPProtoTCP).
 		WithMatchKeyDstPort(6666).
 		WithAction(passAction).
 		Build()
@@ -25,7 +25,7 @@ var _ = Describe("Filter tests", func() {
 		WithChain(0).
 		WithHandle(1).
 		WithMatchKeyDstIP("2001::/112").
-		WithMatchKeyIPProto("tcp").
+		WithMatchKeyIPProto(types.FlowerIPProtoTCP).
 		WithMatchKeyDstPort(6666).
 		WithAction(passAction).
 		Build()
@@ -34,9 +34,9 @@ var _ = Describe("Filter tests", func() {
 		WithPriority(100).
 		WithChain(0).
 		WithHandle(1).
-		WithMatchKeyVlanEthType("ip").
+		WithMatchKeyVlanEthType(types.FlowerVlanEthTypeIPv4).
 		WithMatchKeyDstIP("10.10.10.10/24").
-		WithMatchKeyIPProto("tcp").
+		WithMatchKeyIPProto(types.FlowerIPProtoTCP).
 		WithMatchKeyDstPort(6666).
 		WithAction(passAction).
 		Build()
@@ -45,9 +45,9 @@ var _ = Describe("Filter tests", func() {
 		WithPriority(100).
 		WithChain(0).
 		WithHandle(1).
-		WithMatchKeyVlanEthType("ipv6").
+		WithMatchKeyVlanEthType(types.FlowerVlanEthTypeIPv6).
 		WithMatchKeyDstIP("2001::/112").
-		WithMatchKeyIPProto("tcp").
+		WithMatchKeyIPProto(types.FlowerIPProtoTCP).
 		WithMatchKeyDstPort(6666).
 		WithAction(passAction).
 		Build()
@@ -61,7 +61,7 @@ var _ = Describe("Filter tests", func() {
 				Expect(*testFilterIPv4.Handle).To(BeEquivalentTo(1))
 				Expect(testFilterIPv4.Flower).ToNot(BeNil())
 				Expect(*testFilterIPv4.Flower.DstIP).To(Equal("10.10.10.10/24"))
-				Expect(*testFilterIPv4.Flower.IPProto).To(Equal("tcp"))
+				Expect(*testFilterIPv4.Flower.IPProto).To(Equal(types.FlowerIPProtoTCP))
 				Expect(*testFilterIPv4.Flower.DstPort).To(BeEquivalentTo(6666))
 				Expect(testFilterIPv4.Actions).To(BeEquivalentTo([]types.Action{passAction}))
 			})
@@ -69,7 +69,7 @@ var _ = Describe("Filter tests", func() {
 			It("Builds FlowerFilter with correct attributes for Vlan Protocol", func() {
 				Expect(testFilterVlanIPv4.Protocol).To(Equal(types.FilterProtocol8021Q))
 				Expect(testFilterVlanIPv4.Flower).ToNot(BeNil())
-				Expect(*testFilterVlanIPv4.Flower.VlanEthType).To(Equal("ip"))
+				Expect(*testFilterVlanIPv4.Flower.VlanEthType).To(Equal(types.FlowerVlanEthTypeIPv4))
 			})
 		})
 	})
@@ -93,7 +93,7 @@ var _ = Describe("Filter tests", func() {
 					WithChain(0).
 					WithHandle(1).
 					WithMatchKeyDstIP("10.10.10.10/24").
-					WithMatchKeyIPProto("tcp").
+					WithMatchKeyIPProto(types.FlowerIPProtoTCP).
 					WithMatchKeyDstPort(6666).
 					WithAction(passAction).
 					Build()
@@ -106,7 +106,7 @@ var _ = Describe("Filter tests", func() {
 					WithPriority(100).
 					WithHandle(1).
 					WithMatchKeyDstIP("10.10.10.10/24").
-					WithMatchKeyIPProto("tcp").
+					WithMatchKeyIPProto(types.FlowerIPProtoTCP).
 					WithMatchKeyDstPort(6666).
 					WithAction(passAction).
 					Build()
@@ -133,12 +133,12 @@ var _ = Describe("Filter tests", func() {
 			It("returns false if filters are not equal - vlan protocol, different eth type", func() {
 				filter1 := types.NewFlowerFilterBuilder().
 					WithProtocol(types.FilterProtocol8021Q).
-					WithMatchKeyVlanEthType("ip").
+					WithMatchKeyVlanEthType(types.FlowerVlanEthTypeIPv4).
 					WithAction(passAction).
 					Build()
 				filter2 := types.NewFlowerFilterBuilder().
 					WithProtocol(types.FilterProtocol8021Q).
-					WithMatchKeyVlanEthType("ipv6").
+					WithMatchKeyVlanEthType(types.FlowerVlanEthTypeIPv6).
 					WithAction(passAction).
 					Build()
 				Expect(filter1.Equals(filter2)).To(BeFalse())
@@ -162,7 +162,7 @@ var _ = Describe("Filter tests", func() {
 
 			It("generates expected command line args - vlan ipv4", func() {
 				expectedArgs := []string{
-					"protocol", "802.1Q", "handle", "1", "chain", "0", "pref", "100", "flower",
+					"protocol", "802.1q", "handle", "1", "chain", "0", "pref", "100", "flower",
 					"vlan_ethtype", "ip", "ip_proto", "tcp", "dst_ip", "10.10.10.10/24", "dst_port", "6666",
 					"action", "gact", "pass"}
 				Expect(testFilterVlanIPv4.GenCmdLineArgs()).To(Equal(expectedArgs))
@@ -170,7 +170,7 @@ var _ = Describe("Filter tests", func() {
 
 			It("generates expected command line args - vlan ipv6", func() {
 				expectedArgs := []string{
-					"protocol", "802.1Q", "handle", "1", "chain", "0", "pref", "100", "flower",
+					"protocol", "802.1q", "handle", "1", "chain", "0", "pref", "100", "flower",
 					"vlan_ethtype", "ipv6", "ip_proto", "tcp", "dst_ip", "2001::/112", "dst_port", "6666",
 					"action", "gact", "pass"}
 				Expect(testFilterVlanIPv6.GenCmdLineArgs()).To(Equal(expectedArgs))
