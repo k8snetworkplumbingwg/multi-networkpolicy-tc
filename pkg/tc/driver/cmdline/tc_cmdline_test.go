@@ -10,7 +10,6 @@ import (
 
 	testingexec "k8s.io/utils/exec/testing"
 
-	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
 	driver "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/driver/cmdline"
 	tctypes "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"
@@ -387,7 +386,7 @@ var _ = Describe("TC Cmdline driver tests", func() {
 				WithChain(0).
 				WithMatchKeyDstIP("10.10.10.2/24").
 				WithMatchKeyDstPort(6666).
-				WithMatchKeyIPProto(string(policyrules.ProtocolTCP)).
+				WithMatchKeyIPProto(tctypes.FlowerIPProtoTCP).
 				WithAction(tctypes.NewGenericActionBuiler().WithPass().Build()).
 				Build()
 
@@ -441,7 +440,7 @@ var _ = Describe("TC Cmdline driver tests", func() {
 			fakeCmd.OutputScript = append(fakeCmd.OutputScript, newFakeAction([]byte(filterListOut), nil, nil))
 			expectedFilter := tctypes.NewFlowerFilterBuilder().
 				WithProtocol(tctypes.FilterProtocol8021Q).
-				WithMatchKeyVlanEthType("ip").
+				WithMatchKeyVlanEthType(tctypes.FlowerVlanEthTypeIPv4).
 				WithPriority(200).
 				WithHandle(1).
 				WithChain(0).
