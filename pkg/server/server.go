@@ -40,6 +40,7 @@ import (
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
 	driver "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/driver/cmdline"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/generator"
 	multiutils "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
 
@@ -91,7 +92,7 @@ type Server struct {
 	syncRunner *async.BoundedFrequencyRunner
 
 	policyRuleRenderer      policyrules.Renderer
-	tcRuleGenerator         tc.Generator
+	tcRuleGenerator         generator.Generator
 	sriovnetProvider        netwrappers.SriovnetProvider
 	createActuatorFromRepFn func(string) tc.Actuator
 }
@@ -268,7 +269,7 @@ func NewServer(o *Options) (*Server, error) {
 	}
 
 	if o.tcRuleGenerator == nil {
-		o.tcRuleGenerator = tc.NewSimpleTCGenerator()
+		o.tcRuleGenerator = generator.NewSimpleTCGenerator()
 	}
 
 	if o.sriovnetProvider == nil {
@@ -573,7 +574,7 @@ func (s *Server) syncMultiPolicy() {
 
 // savePodInterfaceRules saves pod interface tc objects to file if podRulesPath option is enabled in server
 func (s *Server) savePodInterfaceRules(
-	pInfo *controllers.PodInfo, ruleSet policyrules.PolicyRuleSet, tcObj *tc.Objects, rep string) error {
+	pInfo *controllers.PodInfo, ruleSet policyrules.PolicyRuleSet, tcObj *generator.Objects, rep string) error {
 	// skip it if no podRulesPath option
 	if s.Options.podRulesPath == "" {
 		return nil

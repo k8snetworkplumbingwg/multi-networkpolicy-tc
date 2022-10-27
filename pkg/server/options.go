@@ -10,6 +10,7 @@ import (
 	netwrappers "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/net"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/generator"
 )
 
 // Options stores option for the command
@@ -27,7 +28,7 @@ type Options struct {
 	// used for testing purposes, leave empty otherwise
 	createActuatorForRep func(string) tc.Actuator
 	policyRuleRenderer   policyrules.Renderer
-	tcRuleGenerator      tc.Generator
+	tcRuleGenerator      generator.Generator
 	sriovnetProvider     netwrappers.SriovnetProvider
 }
 

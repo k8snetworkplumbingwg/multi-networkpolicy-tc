@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	tc "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
+	generator "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/generator"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -13,11 +13,11 @@ type Actuator struct {
 }
 
 // Actuate provides a mock function with given fields: objects
-func (_m *Actuator) Actuate(objects *tc.Objects) error {
+func (_m *Actuator) Actuate(objects *generator.Objects) error {
 	ret := _m.Called(objects)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*tc.Objects) error); ok {
+	if rf, ok := ret.Get(0).(func(*generator.Objects) error); ok {
 		r0 = rf(objects)
 	} else {
 		r0 = ret.Error(0)
