@@ -146,15 +146,15 @@ func (t *TcCmdLineImpl) FilterList(qdisc types.QDisc) ([]types.Filter, error) {
 
 		fb := types.NewFlowerFilterBuilder().
 			WithChain(f.Chain).
-			WithProtocol(types.FilterProtocol(f.Protocol)).
+			WithProtocol(sToFilterProtocol(f.Protocol)).
 			WithPriority(f.Priority).
 			WithHandle(f.Options.Handle)
 
 		if f.Options.Keys.VlanEthType != nil {
-			fb.WithMatchKeyVlanEthType(*f.Options.Keys.VlanEthType)
+			fb.WithMatchKeyVlanEthType(sToFlowerVlanEthType(*f.Options.Keys.VlanEthType))
 		}
 		if f.Options.Keys.IPProto != nil {
-			fb.WithMatchKeyIPProto(*f.Options.Keys.IPProto)
+			fb.WithMatchKeyIPProto(sToFlowerIPProto(*f.Options.Keys.IPProto))
 		}
 		if f.Options.Keys.DstIP != nil {
 			fb.WithMatchKeyDstIP(*f.Options.Keys.DstIP)
