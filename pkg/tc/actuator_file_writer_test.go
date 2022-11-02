@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/generator"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
@@ -47,7 +48,7 @@ var _ = Describe("Actuator file writer tests", Ordered, func() {
 		It("fails to actuate on non existent path", func() {
 			nonExistentPath := filepath.Join(tempDir, "does", "not", "exist")
 			actuator = tc.NewActuatorFileWriterImpl(nonExistentPath, logger)
-			objs := &tc.Objects{
+			objs := &generator.Objects{
 				QDisc: ingressQdisc,
 			}
 			err := actuator.Actuate(objs)
@@ -57,7 +58,7 @@ var _ = Describe("Actuator file writer tests", Ordered, func() {
 		It("fails to actuate on invalid path", func() {
 			invalidPath := ""
 			actuator = tc.NewActuatorFileWriterImpl(invalidPath, logger)
-			objs := &tc.Objects{
+			objs := &generator.Objects{
 				QDisc: ingressQdisc,
 			}
 			err := actuator.Actuate(objs)
@@ -67,7 +68,7 @@ var _ = Describe("Actuator file writer tests", Ordered, func() {
 
 	Context("Actuator file writer with valid path", func() {
 		var tmpFilePath string
-		objs := &tc.Objects{
+		objs := &generator.Objects{
 			QDisc: ingressQdisc,
 			Filters: []types.Filter{
 				types.NewFlowerFilterBuilder().WithProtocol(types.FilterProtocolIPv4).WithPriority(100).Build(),

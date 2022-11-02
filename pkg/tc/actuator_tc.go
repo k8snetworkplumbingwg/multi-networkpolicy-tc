@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/generator"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"
 )
 
@@ -20,7 +21,7 @@ type ActuatorTCImpl struct {
 
 // Actuate is an implementation of Actuator interface. it applies Objects on the representor
 // Note: it assumes all filters are in Chain 0
-func (a *ActuatorTCImpl) Actuate(objects *Objects) error {
+func (a *ActuatorTCImpl) Actuate(objects *generator.Objects) error {
 	if objects.QDisc == nil && len(objects.Filters) > 0 {
 		return errors.New("Qdisc cannot be nil if Filters are provided")
 	}

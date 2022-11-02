@@ -20,6 +20,7 @@ import (
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
 	policymocks "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules/mocks"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
+	generatorMocks "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/generator/mocks"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/mocks"
 )
 
@@ -48,14 +49,14 @@ var _ = Describe("Server test", func() {
 	var wg sync.WaitGroup
 	var mockActuator *mocks.Actuator
 	var mockRenderer *policymocks.Renderer
-	var mockRuleGenerator *mocks.Generator
+	var mockRuleGenerator *generatorMocks.Generator
 	var mockSriovnetProvider *netmocks.SriovnetProvider
 
 	BeforeEach(func() {
 		var err error
 		mockActuator = &mocks.Actuator{}
 		mockRenderer = &policymocks.Renderer{}
-		mockRuleGenerator = &mocks.Generator{}
+		mockRuleGenerator = &generatorMocks.Generator{}
 		mockSriovnetProvider = &netmocks.SriovnetProvider{}
 
 		o := &Options{

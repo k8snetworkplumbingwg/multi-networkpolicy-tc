@@ -4,7 +4,7 @@ package mocks
 
 import (
 	policyrules "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
-	tc "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
+	generator "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/generator"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -14,15 +14,15 @@ type Generator struct {
 }
 
 // GenerateFromPolicyRuleSet provides a mock function with given fields: ruleSet
-func (_m *Generator) GenerateFromPolicyRuleSet(ruleSet policyrules.PolicyRuleSet) (*tc.Objects, error) {
+func (_m *Generator) GenerateFromPolicyRuleSet(ruleSet policyrules.PolicyRuleSet) (*generator.Objects, error) {
 	ret := _m.Called(ruleSet)
 
-	var r0 *tc.Objects
-	if rf, ok := ret.Get(0).(func(policyrules.PolicyRuleSet) *tc.Objects); ok {
+	var r0 *generator.Objects
+	if rf, ok := ret.Get(0).(func(policyrules.PolicyRuleSet) *generator.Objects); ok {
 		r0 = rf(ruleSet)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tc.Objects)
+			r0 = ret.Get(0).(*generator.Objects)
 		}
 	}
 

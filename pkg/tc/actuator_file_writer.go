@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/generator"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
 
@@ -31,7 +32,7 @@ type ActuatorFileWriterImpl struct {
 // in a human-readable format (as this is really intended for debug purposes). We need represent
 // these objects as string. For now, we leverage CmdLineGenerator interface which is implemented by all objects.
 // Later on, it may be desired to extend the interface with String() method and implement throughout then use it here.
-func (a ActuatorFileWriterImpl) Actuate(objects *Objects) error {
+func (a ActuatorFileWriterImpl) Actuate(objects *generator.Objects) error {
 	exist, err := utils.PathExists(a.path)
 	if err != nil {
 		return errors.Wrapf(err, "failed to determine if path exist: %s", a.path)
