@@ -1,4 +1,4 @@
-package driver_test
+package cmdline_test
 
 import (
 	"flag"

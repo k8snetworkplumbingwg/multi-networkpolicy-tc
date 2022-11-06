@@ -39,7 +39,7 @@ import (
 	netwrappers "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/net"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
-	driver "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/driver/cmdline"
+	cmdlinedriver "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/driver/cmdline"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/generator"
 	multiutils "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
@@ -643,7 +643,7 @@ func (s *Server) getRepresentor(pciAddr string) (string, error) {
 
 // createActuatorForRep creates a new tc.Actuator with provider representor netdev
 func createActuatorForRep(rep string) tc.Actuator {
-	tcAPI := driver.NewTcCmdLineImpl(
+	tcAPI := cmdlinedriver.NewTcCmdLineImpl(
 		rep, klog.NewKlogr().WithName("tc-cmdline-driver"), exec.New())
 	return tc.NewActuatorTCImpl(tcAPI, klog.NewKlogr().WithName("tc-actuator"))
 }

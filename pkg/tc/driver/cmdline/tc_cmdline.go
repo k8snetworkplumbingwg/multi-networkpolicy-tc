@@ -1,5 +1,5 @@
 //nolint:prealloc
-package driver
+package cmdline
 
 import (
 	"encoding/json"

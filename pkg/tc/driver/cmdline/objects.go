@@ -1,4 +1,4 @@
-package driver
+package cmdline
 
 type cQDisc struct {
 	Kind   string `json:"kind"`
