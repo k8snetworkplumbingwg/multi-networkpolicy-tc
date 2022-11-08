@@ -8,14 +8,14 @@ type cQDisc struct {
 
 type cChain struct {
 	Parent string `json:"parent"`
-	Chain  uint16 `json:"chain"`
+	Chain  uint32 `json:"chain"`
 }
 
 type cFilter struct {
 	Protocol string          `json:"protocol"`
 	Priority uint16          `json:"pref"`
 	Kind     string          `json:"kind"`
-	Chain    uint16          `json:"chain"`
+	Chain    uint32          `json:"chain"`
 	Options  *cFilterOptions `json:"options,omitempty"`
 }
 

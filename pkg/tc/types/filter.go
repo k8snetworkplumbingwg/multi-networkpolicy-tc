@@ -63,14 +63,14 @@ type Filter interface {
 type FilterAttrs struct {
 	Kind     FilterKind
 	Protocol FilterProtocol
-	Chain    *uint16
+	Chain    *uint32
 	Handle   *uint32
 	Priority *uint16
 }
 
 // NewFilterAttrs creates new FilterAttrs instance
 func NewFilterAttrs(
-	kind FilterKind, protocol FilterProtocol, chain *uint16, handle *uint32, priority *uint16) *FilterAttrs {
+	kind FilterKind, protocol FilterProtocol, chain *uint32, handle *uint32, priority *uint16) *FilterAttrs {
 	return &FilterAttrs{
 		Kind:     kind,
 		Protocol: protocol,
@@ -297,7 +297,7 @@ func (fb *FilterAttrsBuilder) WithProtocol(p FilterProtocol) *FilterAttrsBuilder
 }
 
 // WithChain adds Chain index to FilterAttrsBuilder
-func (fb *FilterAttrsBuilder) WithChain(c uint16) *FilterAttrsBuilder {
+func (fb *FilterAttrsBuilder) WithChain(c uint32) *FilterAttrsBuilder {
 	fb.filterAttrs.Chain = &c
 	return fb
 }
@@ -353,7 +353,7 @@ func (fb *FlowerFilterBuilder) WithProtocol(p FilterProtocol) *FlowerFilterBuild
 }
 
 // WithChain adds Chain number to FlowerFilterBuilder
-func (fb *FlowerFilterBuilder) WithChain(c uint16) *FlowerFilterBuilder {
+func (fb *FlowerFilterBuilder) WithChain(c uint32) *FlowerFilterBuilder {
 	fb.filterAttrsBuilder = fb.filterAttrsBuilder.WithChain(c)
 	return fb
 }

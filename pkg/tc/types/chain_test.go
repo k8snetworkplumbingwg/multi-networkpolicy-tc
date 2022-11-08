@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("Chain tests", func() {
 	parent := uint32(0xfffffff1)
-	chain := uint16(0)
+	chain := uint32(0)
 
 	assertChain := func(q *types.ChainImpl) {
 		ExpectWithOffset(1, q).ToNot(BeNil())
