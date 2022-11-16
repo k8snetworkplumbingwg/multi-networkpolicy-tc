@@ -3,6 +3,8 @@ package tc_test
 import (
 	"flag"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/generator"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
+	"net"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -154,17 +156,18 @@ var _ = Describe("Actuator TC tests", func() {
 	})
 
 	Context("Actuate with filters", func() {
+		ipToIpNet := func(ip string) *net.IPNet { ipn, _ := utils.IPToIPNet(ip); return ipn }
 		neededFilters := []tctypes.Filter{
 			tctypes.NewFlowerFilterBuilder().
 				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithPriority(100).
-				WithMatchKeyDstIP("10.100.0.0/24").
+				WithMatchKeyDstIP(ipToIpNet("10.100.0.0/24")).
 				WithAction(tctypes.NewGenericActionBuiler().WithDrop().Build()).
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
 				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithPriority(200).
-				WithMatchKeyDstIP("10.100.0.0/16").
+				WithMatchKeyDstIP(ipToIpNet("10.100.0.0/16")).
 				WithAction(tctypes.NewGenericActionBuiler().WithPass().Build()).
 				Build(),
 		}
@@ -172,13 +175,13 @@ var _ = Describe("Actuator TC tests", func() {
 			tctypes.NewFlowerFilterBuilder().
 				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithPriority(100).
-				WithMatchKeyDstIP("10.100.1.0/24").
+				WithMatchKeyDstIP(ipToIpNet("10.100.1.0/24")).
 				WithAction(tctypes.NewGenericActionBuiler().WithDrop().Build()).
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
 				WithProtocol(tctypes.FilterProtocolIPv4).
 				WithPriority(200).
-				WithMatchKeyDstIP("10.100.0.0/16").
+				WithMatchKeyDstIP(ipToIpNet("10.100.0.0/16")).
 				WithAction(tctypes.NewGenericActionBuiler().WithPass().Build()).
 				Build(),
 		}
