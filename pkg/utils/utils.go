@@ -120,3 +120,28 @@ func PathExists(path string) (bool, error) {
 	}
 	return false, err
 }
+
+// IsMaskFull returns true if provided mask is all 1s (e.g in CIDR notation, for IPv4 mask its a /32 mask,
+// and for IPv6 mask it is /128
+func IsMaskFull(mask net.IPMask) bool {
+	ones, bits := mask.Size()
+	return ones == bits
+}
+
+// IPToIPNet coverts IP or CIDR formatted string to *net.IPNet.
+// if no CIDR notation, then /32 or /128 mask is assumed for ipv4 and ipv6 respectively.
+func IPToIPNet(ip string) (*net.IPNet, error) {
+	if !strings.Contains(ip, "/") {
+		ipp := net.ParseIP(ip)
+		if ipp == nil {
+			return nil, fmt.Errorf("failed to parse ip: %s", ip)
+		}
+		if ipp.To4() != nil {
+			ip += "/32"
+		} else {
+			ip += "/128"
+		}
+	}
+	_, ipn, err := net.ParseCIDR(ip)
+	return ipn, err
+}

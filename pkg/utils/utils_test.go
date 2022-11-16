@@ -259,4 +259,60 @@ var _ = Describe("utils test", func() {
 			Expect(utils.IsIPv4(ip)).To(BeFalse())
 		})
 	})
+
+	Context("IsMaskFull()", func() {
+		It("returns true for full mask", func() {
+			Expect(utils.IsMaskFull(net.IPMask{0xff, 0xff, 0xff, 0xff})).To(BeTrue())
+		})
+
+		It("returns false for partial mask", func() {
+			Expect(utils.IsMaskFull(net.IPMask{0xff, 0xff, 0xff, 0x00})).To(BeFalse())
+		})
+	})
+
+	Context("IPToIPNet()", func() {
+		It("fails if invalid IP", func() {
+			_, err := utils.IPToIPNet("bad/ip")
+			Expect(err).To(HaveOccurred())
+			_, err = utils.IPToIPNet("10.10.10")
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("returns correct ipnet for ipv4", func() {
+			ipn, err := utils.IPToIPNet("10.100.11.1")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ipn.String()).To(Equal("10.100.11.1/32"))
+		})
+
+		It("returns correct ipnet for ipv6", func() {
+			ipn, err := utils.IPToIPNet("2001:1234:fafb:abbc:cddc:dccd:af22:22af")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ipn.String()).To(Equal("2001:1234:fafb:abbc:cddc:dccd:af22:22af/128"))
+		})
+
+		It("returns correct ipnet for ipv4 CIDR", func() {
+			ipn, err := utils.IPToIPNet("10.100.11.1/24")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ipn.String()).To(Equal("10.100.11.0/24"))
+		})
+
+		It("returns correct ipnet for ipv6 CIDR", func() {
+			ipn, err := utils.IPToIPNet("2001:1234::/96")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ipn.String()).To(Equal("2001:1234::/96"))
+		})
+
+		It("returns correct ipnet for ipv4 /32 CIDR", func() {
+			ipn, err := utils.IPToIPNet("10.100.11.1/32")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ipn.String()).To(Equal("10.100.11.1/32"))
+		})
+
+		It("returns correct ipnet for ipv6 /128 CIDR", func() {
+			ipn, err := utils.IPToIPNet("2001::22af/128")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ipn.String()).To(Equal("2001::22af/128"))
+		})
+
+	})
 })
