@@ -1,8 +1,10 @@
 package tc_test
 
 import (
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"net"
 
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
 	tctypes "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"
@@ -10,6 +12,7 @@ import (
 
 var _ = Describe("FilterSetImpl tests", func() {
 	var filterSet tc.FilterSet
+	ipToIpNet := func(ip string) *net.IPNet { ipn, _ := utils.IPToIPNet(ip); return ipn }
 
 	BeforeEach(func() {
 		filterSet = tc.NewFilterSetImpl()
@@ -102,7 +105,7 @@ var _ = Describe("FilterSetImpl tests", func() {
 		BeforeEach(func() {
 			filter = tctypes.NewFlowerFilterBuilder().
 				WithProtocol(tctypes.FilterProtocolIPv4).
-				WithMatchKeyDstIP("192.168.1.2").
+				WithMatchKeyDstIP(ipToIpNet("192.168.1.2")).
 				Build()
 			filterSet.Add(filter)
 		})
@@ -114,7 +117,7 @@ var _ = Describe("FilterSetImpl tests", func() {
 		It("returns false if Filter no in set", func() {
 			otherFilter := tctypes.NewFlowerFilterBuilder().
 				WithProtocol(tctypes.FilterProtocolIPv4).
-				WithMatchKeyDstIP("192.168.2.2").
+				WithMatchKeyDstIP(ipToIpNet("192.168.2.2")).
 				Build()
 			Expect(filterSet.Has(otherFilter)).To(BeFalse())
 		})
@@ -161,7 +164,7 @@ var _ = Describe("FilterSetImpl tests", func() {
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
 				WithProtocol(tctypes.FilterProtocolIPv4).
-				WithMatchKeyDstIP("192.168.1.1").
+				WithMatchKeyDstIP(ipToIpNet("192.168.1.1")).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithPass().
@@ -255,7 +258,7 @@ var _ = Describe("FilterSetImpl tests", func() {
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
 				WithProtocol(tctypes.FilterProtocolIPv4).
-				WithMatchKeyDstIP("192.168.1.1").
+				WithMatchKeyDstIP(ipToIpNet("192.168.1.1")).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithPass().
@@ -350,7 +353,7 @@ var _ = Describe("FilterSetImpl tests", func() {
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
 				WithProtocol(tctypes.FilterProtocolIPv4).
-				WithMatchKeyDstIP("192.168.1.1").
+				WithMatchKeyDstIP(ipToIpNet("192.168.1.1")).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithPass().
@@ -450,7 +453,7 @@ var _ = Describe("FilterSetImpl tests", func() {
 				Build(),
 			tctypes.NewFlowerFilterBuilder().
 				WithProtocol(tctypes.FilterProtocolIPv4).
-				WithMatchKeyDstIP("192.168.1.1").
+				WithMatchKeyDstIP(ipToIpNet("192.168.1.1")).
 				WithAction(
 					tctypes.NewGenericActionBuiler().
 						WithPass().
