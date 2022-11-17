@@ -12,6 +12,7 @@ import (
 	"k8s.io/utils/exec"
 
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
 
 // NewTcCmdLineImpl creates a new instance of TcCmdLineImpl
@@ -157,7 +158,11 @@ func (t *TcCmdLineImpl) FilterList(qdisc types.QDisc) ([]types.Filter, error) {
 			fb.WithMatchKeyIPProto(sToFlowerIPProto(*f.Options.Keys.IPProto))
 		}
 		if f.Options.Keys.DstIP != nil {
-			fb.WithMatchKeyDstIP(*f.Options.Keys.DstIP)
+			ipn, err := utils.IPToIPNet(*f.Options.Keys.DstIP)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to parse dest IP: %s", *f.Options.Keys.DstIP)
+			}
+			fb.WithMatchKeyDstIP(ipn)
 		}
 		if f.Options.Keys.DstPort != nil {
 			fb.WithMatchKeyDstPort(*f.Options.Keys.DstPort)

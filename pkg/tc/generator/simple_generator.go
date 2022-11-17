@@ -133,7 +133,7 @@ func (s *SimpleTCGenerator) genFiltersWithIPs(ipCidrs []*net.IPNet, basePrio Bas
 			tctypes.NewFlowerFilterBuilder().
 				WithProtocol(proto).
 				WithPriority(PrioFromBaseAndProtcol(basePrio, proto)).
-				WithMatchKeyDstIP(ipCidr.String()).
+				WithMatchKeyDstIP(ipCidr).
 				WithAction(action).
 				Build())
 		// traffic may be tagged, add rule to match on tag traffic as well
@@ -142,7 +142,7 @@ func (s *SimpleTCGenerator) genFiltersWithIPs(ipCidrs []*net.IPNet, basePrio Bas
 				WithProtocol(tctypes.FilterProtocol8021Q).
 				WithPriority(PrioFromBaseAndProtcol(basePrio, tctypes.FilterProtocol8021Q)).
 				WithMatchKeyVlanEthType(tctypes.ProtoToFlowerVlanEthType(proto)).
-				WithMatchKeyDstIP(ipCidr.String()).
+				WithMatchKeyDstIP(ipCidr).
 				WithAction(action).
 				Build())
 	}
@@ -216,7 +216,7 @@ func (s *SimpleTCGenerator) genFiltersWithIPsAndPorts(ipCidrs []*net.IPNet, port
 				tctypes.NewFlowerFilterBuilder().
 					WithProtocol(proto).
 					WithPriority(PrioFromBaseAndProtcol(basePrio, proto)).
-					WithMatchKeyDstIP(ipCidr.String()).
+					WithMatchKeyDstIP(ipCidr).
 					WithMatchKeyIPProto(tctypes.PortProtocolToFlowerIPProto(port.Protocol)).
 					WithMatchKeyDstPort(port.Number).
 					WithAction(action).
@@ -227,7 +227,7 @@ func (s *SimpleTCGenerator) genFiltersWithIPsAndPorts(ipCidrs []*net.IPNet, port
 					WithProtocol(tctypes.FilterProtocol8021Q).
 					WithPriority(PrioFromBaseAndProtcol(basePrio, tctypes.FilterProtocol8021Q)).
 					WithMatchKeyVlanEthType(tctypes.ProtoToFlowerVlanEthType(proto)).
-					WithMatchKeyDstIP(ipCidr.String()).
+					WithMatchKeyDstIP(ipCidr).
 					WithMatchKeyIPProto(tctypes.PortProtocolToFlowerIPProto(port.Protocol)).
 					WithMatchKeyDstPort(port.Number).
 					WithAction(action).

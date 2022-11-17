@@ -1,8 +1,11 @@
 package types
 
 import (
+	"net"
+	"reflect"
 	"strconv"
-	"strings"
+
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
 
 const (
@@ -133,7 +136,7 @@ func (fa *FilterAttrs) Equals(other *FilterAttrs) bool {
 type FlowerSpec struct {
 	VlanEthType *FlowerVlanEthType
 	IPProto     *FlowerIPProto
-	DstIP       *string
+	DstIP       *net.IPNet
 	DstPort     *uint16
 }
 
@@ -154,7 +157,11 @@ func (ff *FlowerSpec) GenCmdLineArgs() []string {
 	}
 
 	if ff.DstIP != nil {
-		args = append(args, string(FlowerKeyDstIP), *ff.DstIP)
+		if ff.DstIP.Mask != nil && !utils.IsMaskFull(ff.DstIP.Mask) {
+			args = append(args, string(FlowerKeyDstIP), ff.DstIP.String())
+		} else {
+			args = append(args, string(FlowerKeyDstIP), ff.DstIP.IP.String())
+		}
 	}
 
 	if ff.DstPort != nil {
@@ -181,8 +188,20 @@ func (ff *FlowerSpec) Equals(other *FlowerSpec) bool {
 	if !compare(ff.IPProto, other.IPProto, nil) {
 		return false
 	}
-	if !compare(ff.DstIP, other.DstIP, nil) {
-		return false
+	if ff.DstIP != other.DstIP {
+		if ff.DstIP != nil && other.DstIP != nil {
+			// same IP
+			if !reflect.DeepEqual(ff.DstIP.IP, other.DstIP.IP) {
+				return false
+			}
+			// same mask
+			if !reflect.DeepEqual(ff.DstIP.Mask, other.DstIP.Mask) {
+				return false
+			}
+		} else {
+			// one is nil the other is not
+			return false
+		}
 	}
 	if !compare(ff.DstPort, other.DstPort, nil) {
 		return false
@@ -364,14 +383,8 @@ func (fb *FlowerFilterBuilder) WithMatchKeyIPProto(val FlowerIPProto) *FlowerFil
 }
 
 // WithMatchKeyDstIP adds Match with FlowerKeyDstIP key and specified value to FlowerFilterBuilder
-func (fb *FlowerFilterBuilder) WithMatchKeyDstIP(val string) *FlowerFilterBuilder {
-	// if its a CIDR with /32 take only the IP else take the full CIDR
-	if strings.HasSuffix(val, "/32") {
-		valNoMask := val[:len(val)-3]
-		fb.flowerFilter.Flower.DstIP = &valNoMask
-	} else {
-		fb.flowerFilter.Flower.DstIP = &val
-	}
+func (fb *FlowerFilterBuilder) WithMatchKeyDstIP(ipNet *net.IPNet) *FlowerFilterBuilder {
+	fb.flowerFilter.Flower.DstIP = ipNet
 	return fb
 }
 

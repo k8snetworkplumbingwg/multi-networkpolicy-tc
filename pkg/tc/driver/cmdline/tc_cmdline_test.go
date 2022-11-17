@@ -1,18 +1,20 @@
 package driver_test
 
 import (
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
-	"k8s.io/utils/exec"
+	"net"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
+	"k8s.io/utils/exec"
 
 	testingexec "k8s.io/utils/exec/testing"
 
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
 	driver "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/driver/cmdline"
 	tctypes "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
 
 const (
@@ -47,6 +49,7 @@ var _ = Describe("TC Cmdline driver tests", func() {
 	var tcCmdLine tc.TC
 	var log = klog.NewKlogr().WithName("tc-driver-cmdline-test")
 	var testError = errors.New("test error!")
+	ipToIpNet := func(ip string) *net.IPNet { ipn, _ := utils.IPToIPNet(ip); return ipn }
 
 	BeforeEach(func() {
 		fakeExec = &fakeExecHelper{testingexec.FakeExec{}}
@@ -255,7 +258,7 @@ var _ = Describe("TC Cmdline driver tests", func() {
 		filterToAdd := tctypes.NewFlowerFilterBuilder().
 			WithProtocol(tctypes.FilterProtocolIPv4).
 			WithAction(tctypes.NewGenericActionBuiler().WithPass().Build()).
-			WithMatchKeyDstIP("10.10.10.2/24").
+			WithMatchKeyDstIP(ipToIpNet("10.10.10.2/24")).
 			Build()
 		expectedCmdArgs := []string{"tc", "-json", "filter", "add", "dev", fakeNetDev}
 		expectedCmdArgs = append(expectedCmdArgs, ingressQdisc.GenCmdLineArgs()...)
@@ -384,7 +387,7 @@ var _ = Describe("TC Cmdline driver tests", func() {
 				WithPriority(200).
 				WithHandle(1).
 				WithChain(0).
-				WithMatchKeyDstIP("10.10.10.2/24").
+				WithMatchKeyDstIP(ipToIpNet("10.10.10.2/24")).
 				WithMatchKeyDstPort(6666).
 				WithMatchKeyIPProto(tctypes.FlowerIPProtoTCP).
 				WithAction(tctypes.NewGenericActionBuiler().WithPass().Build()).
