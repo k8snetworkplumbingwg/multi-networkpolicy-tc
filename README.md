@@ -85,6 +85,7 @@ The following configuration flags are supported by `multi-networkpolicy-tc`:
       --hostname-override string         If non-empty, will use this string as identification instead of the actual hostname.
       --network-plugins strings          List of network plugins to be be considered for network policies. (default [accelerated-bridge])
       --pod-rules-path string            If non-empty, will use this path to store pod's rules for troubleshooting.
+      --tc-driver string                 TC driver to use for interacting with linux Traffic Class subsystem. [cmdline, netlink]. (default "cmdline")
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
