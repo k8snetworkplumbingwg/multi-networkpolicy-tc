@@ -2,7 +2,6 @@ package types
 
 import (
 	"net"
-	"reflect"
 	"strconv"
 
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
@@ -190,12 +189,12 @@ func (ff *FlowerSpec) Equals(other *FlowerSpec) bool {
 	}
 	if ff.DstIP != other.DstIP {
 		if ff.DstIP != nil && other.DstIP != nil {
-			// same IP
-			if !reflect.DeepEqual(ff.DstIP.IP, other.DstIP.IP) {
+			// same IP (compare string representation to avoid cases where IP was created with 4 bytes vs 16 bytes)
+			if ff.DstIP.IP.String() != other.DstIP.IP.String() {
 				return false
 			}
 			// same mask
-			if !reflect.DeepEqual(ff.DstIP.Mask, other.DstIP.Mask) {
+			if ff.DstIP.Mask.String() != other.DstIP.Mask.String() {
 				return false
 			}
 		} else {

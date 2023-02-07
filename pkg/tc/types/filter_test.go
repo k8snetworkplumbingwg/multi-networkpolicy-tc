@@ -240,6 +240,20 @@ var _ = Describe("Filter tests", func() {
 					Build()
 				Expect(filter1.Equals(filter2)).To(BeFalse())
 			})
+
+			It("returns true for filters with same IPv4 address but with different byte len", func() {
+				ip1 := net.IP{0x10, 0x20, 0x30, 0x2}
+				ip2 := ip1.To16()
+				filter1 := types.NewFlowerFilterBuilder().
+					WithProtocol(types.FilterProtocolIPv4).
+					WithMatchKeyDstIP(&net.IPNet{IP: ip1, Mask: nil}).
+					Build()
+				filter2 := types.NewFlowerFilterBuilder().
+					WithProtocol(types.FilterProtocolIPv4).
+					WithMatchKeyDstIP(&net.IPNet{IP: ip2, Mask: nil}).
+					Build()
+				Expect(filter1.Equals(filter2)).To(BeTrue())
+			})
 		})
 
 		Context("CmdLineGenerator", func() {
