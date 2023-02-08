@@ -89,6 +89,7 @@ func (a *ActuatorTCImpl) Actuate(objects *generator.Objects) error {
 
 	if existingFilterSet.Equals(newFilterSet) {
 		// same filters nothing to do
+		a.log.Info("current and new tc filters are the same - no action needed.")
 		return nil
 	}
 

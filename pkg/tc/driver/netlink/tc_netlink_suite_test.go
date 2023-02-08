@@ -1,4 +1,4 @@
-package cmdline_test
+package netlink_test
 
 import (
 	"flag"
@@ -12,7 +12,7 @@ import (
 
 func TestUtils(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "tc-driver-cmdline")
+	RunSpecs(t, "tc-driver-netlink")
 }
 
 var _ = BeforeSuite(func() {

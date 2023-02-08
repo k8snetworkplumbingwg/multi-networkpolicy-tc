@@ -24,12 +24,14 @@ type Options struct {
 	hostnameOverride string
 	networkPlugins   []string
 	podRulesPath     string
+	tcDriver         string
 
-	// used for testing purposes, leave empty otherwise
-	createActuatorForRep func(string) tc.Actuator
+	// below here, used for testing purposes, leave empty otherwise
+	createActuatorForRep func(string) (tc.Actuator, error)
 	policyRuleRenderer   policyrules.Renderer
 	tcRuleGenerator      generator.Generator
 	sriovnetProvider     netwrappers.SriovnetProvider
+	netlinkProvider      netwrappers.NetlinkProvider
 }
 
 // AddFlags adds command line flags into command
@@ -46,6 +48,8 @@ func (o *Options) AddFlags(fs *pflag.FlagSet) {
 		"List of network plugins to be be considered for network policies.")
 	fs.StringVar(&o.podRulesPath, "pod-rules-path", o.podRulesPath,
 		"If non-empty, will use this path to store pod's rules for troubleshooting.")
+	fs.StringVar(&o.tcDriver, "tc-driver", "cmdline",
+		"TC driver to use for interacting with linux Traffic Class subsystem. [cmdline, netlink].")
 	fs.AddGoFlagSet(flag.CommandLine)
 }
 

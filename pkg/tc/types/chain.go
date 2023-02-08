@@ -9,7 +9,7 @@ const (
 	// ChainDefaultParent is the default parent of a chain which is the ingress qdisc
 	ChainDefaultParent uint32 = 0xfffffff1
 	// ChainDefaultChain is the default chain number
-	ChainDefaultChain uint16 = 0
+	ChainDefaultChain uint32 = 0
 )
 
 // Chain is an interface which represents a TC chain
@@ -24,7 +24,7 @@ type Chain interface {
 // ChainAttrs are the attributes of a Chain
 type ChainAttrs struct {
 	Parent *uint32
-	Chain  *uint16
+	Chain  *uint32
 }
 
 // ChainImpl is a concrete implementation of Chain
@@ -52,7 +52,7 @@ func (c *ChainImpl) GenCmdLineArgs() []string {
 	return args
 }
 
-func NewChainImpl(parent *uint32, chain *uint16) *ChainImpl {
+func NewChainImpl(parent *uint32, chain *uint32) *ChainImpl {
 	return &ChainImpl{ChainAttrs{
 		Parent: parent,
 		Chain:  chain,
@@ -78,7 +78,7 @@ func (cb *ChainBuilder) WithParent(parent uint32) *ChainBuilder {
 }
 
 // WithChain adds Chain chain number to ChainBuilder
-func (cb *ChainBuilder) WithChain(chain uint16) *ChainBuilder {
+func (cb *ChainBuilder) WithChain(chain uint32) *ChainBuilder {
 	cb.chain.Chain = &chain
 	return cb
 }

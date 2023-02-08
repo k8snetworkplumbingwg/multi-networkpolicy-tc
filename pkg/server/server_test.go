@@ -9,6 +9,7 @@ import (
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
 	netdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/stretchr/testify/mock"
+	"github.com/vishvananda/netlink"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -23,6 +24,19 @@ import (
 	generatorMocks "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/generator/mocks"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/mocks"
 )
+
+// fakeLink is a dummy netlink struct used during testing
+type fakeLink struct {
+	netlink.LinkAttrs
+}
+
+func (l *fakeLink) Attrs() *netlink.LinkAttrs {
+	return &l.LinkAttrs
+}
+
+func (l *fakeLink) Type() string {
+	return "FakeLink"
+}
 
 func createTestPodAndSetRunning(ctx context.Context, testPod *v1.Pod) {
 	p, err := kClient.
@@ -64,7 +78,7 @@ var _ = Describe("Server test", func() {
 			hostnameOverride:     nodeName,
 			networkPlugins:       []string{"accelerated-bridge"},
 			podRulesPath:         "",
-			createActuatorForRep: func(string) tc.Actuator { return mockActuator },
+			createActuatorForRep: func(string) (tc.Actuator, error) { return mockActuator, nil },
 			policyRuleRenderer:   mockRenderer,
 			tcRuleGenerator:      mockRuleGenerator,
 			sriovnetProvider:     mockSriovnetProvider,
@@ -220,5 +234,50 @@ var _ = Describe("Server test", func() {
 				WithTimeout(5 * time.Second).
 				Should(BeNumerically(">=", 1))
 		})
+	})
+})
+
+var _ = Describe("Server createActuatorForRep test", func() {
+	var testServer *Server
+	var mockNetlinkProvider *netmocks.NetlinkProvider
+	repName := "eth5"
+
+	BeforeEach(func() {
+		mockNetlinkProvider = &netmocks.NetlinkProvider{}
+		o := &Options{
+			netlinkProvider: mockNetlinkProvider,
+		}
+		testServer = &Server{
+			Options:         o,
+			netlinkProvider: mockNetlinkProvider,
+		}
+	})
+
+	It("returns successfully when tcDriver option is set to cmdline", func() {
+		testServer.Options.tcDriver = "cmdline"
+		_, err := testServer.createActuatorForRep("eth5")
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("returns successfully when tcDriver option is set to netlink", func() {
+		fLink := &fakeLink{netlink.LinkAttrs{Name: repName}}
+		mockNetlinkProvider.On("LinkByName", repName).Return(fLink, nil)
+		testServer.Options.tcDriver = "netlink"
+		_, err := testServer.createActuatorForRep(repName)
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("fails if fail to get link devices for tcDriver netlink", func() {
+		mockNetlinkProvider.On("LinkByName", repName).Return(nil,
+			fmt.Errorf("link not found"))
+		testServer.Options.tcDriver = "netlink"
+		_, err := testServer.createActuatorForRep(repName)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("fails if tcDriver is unknown", func() {
+		testServer.Options.tcDriver = "some-unknown-driver"
+		_, err := testServer.createActuatorForRep(repName)
+		Expect(err).To(HaveOccurred())
 	})
 })

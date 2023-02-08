@@ -2,7 +2,6 @@ package types
 
 import (
 	"net"
-	"reflect"
 	"strconv"
 
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
@@ -63,14 +62,14 @@ type Filter interface {
 type FilterAttrs struct {
 	Kind     FilterKind
 	Protocol FilterProtocol
-	Chain    *uint16
+	Chain    *uint32
 	Handle   *uint32
 	Priority *uint16
 }
 
 // NewFilterAttrs creates new FilterAttrs instance
 func NewFilterAttrs(
-	kind FilterKind, protocol FilterProtocol, chain *uint16, handle *uint32, priority *uint16) *FilterAttrs {
+	kind FilterKind, protocol FilterProtocol, chain *uint32, handle *uint32, priority *uint16) *FilterAttrs {
 	return &FilterAttrs{
 		Kind:     kind,
 		Protocol: protocol,
@@ -190,12 +189,12 @@ func (ff *FlowerSpec) Equals(other *FlowerSpec) bool {
 	}
 	if ff.DstIP != other.DstIP {
 		if ff.DstIP != nil && other.DstIP != nil {
-			// same IP
-			if !reflect.DeepEqual(ff.DstIP.IP, other.DstIP.IP) {
+			// same IP (compare string representation to avoid cases where IP was created with 4 bytes vs 16 bytes)
+			if ff.DstIP.IP.String() != other.DstIP.IP.String() {
 				return false
 			}
 			// same mask
-			if !reflect.DeepEqual(ff.DstIP.Mask, other.DstIP.Mask) {
+			if ff.DstIP.Mask.String() != other.DstIP.Mask.String() {
 				return false
 			}
 		} else {
@@ -297,7 +296,7 @@ func (fb *FilterAttrsBuilder) WithProtocol(p FilterProtocol) *FilterAttrsBuilder
 }
 
 // WithChain adds Chain index to FilterAttrsBuilder
-func (fb *FilterAttrsBuilder) WithChain(c uint16) *FilterAttrsBuilder {
+func (fb *FilterAttrsBuilder) WithChain(c uint32) *FilterAttrsBuilder {
 	fb.filterAttrs.Chain = &c
 	return fb
 }
@@ -353,7 +352,7 @@ func (fb *FlowerFilterBuilder) WithProtocol(p FilterProtocol) *FlowerFilterBuild
 }
 
 // WithChain adds Chain number to FlowerFilterBuilder
-func (fb *FlowerFilterBuilder) WithChain(c uint16) *FlowerFilterBuilder {
+func (fb *FlowerFilterBuilder) WithChain(c uint32) *FlowerFilterBuilder {
 	fb.filterAttrsBuilder = fb.filterAttrsBuilder.WithChain(c)
 	return fb
 }

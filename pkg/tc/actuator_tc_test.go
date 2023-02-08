@@ -37,7 +37,7 @@ func filterAttrMatch(filterAttr *tctypes.FilterAttrs) func(f *tctypes.FilterAttr
 	}
 }
 
-func chainMatch(chain uint16) func(c tctypes.Chain) bool {
+func chainMatch(chain uint32) func(c tctypes.Chain) bool {
 	// Note(adrianc): ATM we are not needed to match on parent. it may change...
 	return func(c tctypes.Chain) bool {
 		return chain == *c.Attrs().Chain

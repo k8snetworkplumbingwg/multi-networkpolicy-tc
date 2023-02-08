@@ -39,7 +39,8 @@ import (
 	netwrappers "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/net"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
-	driver "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/driver/cmdline"
+	cmdlinedriver "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/driver/cmdline"
+	netlinkdriver "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/driver/netlink"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/generator"
 	multiutils "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 )
@@ -94,7 +95,8 @@ type Server struct {
 	policyRuleRenderer      policyrules.Renderer
 	tcRuleGenerator         generator.Generator
 	sriovnetProvider        netwrappers.SriovnetProvider
-	createActuatorFromRepFn func(string) tc.Actuator
+	netlinkProvider         netwrappers.NetlinkProvider
+	createActuatorFromRepFn func(string) (tc.Actuator, error)
 }
 
 func (s *Server) RunPodConfig(ctx context.Context) {
@@ -192,6 +194,8 @@ func (s *Server) SyncLoop(ctx context.Context) {
 }
 
 // NewServer creates a new *Server instance
+//
+//nolint:funlen
 func NewServer(o *Options) (*Server, error) {
 	var kubeConfig *rest.Config
 	var err error
@@ -276,8 +280,8 @@ func NewServer(o *Options) (*Server, error) {
 		o.sriovnetProvider = netwrappers.NewSriovnetProviderImpl()
 	}
 
-	if o.createActuatorForRep == nil {
-		o.createActuatorForRep = createActuatorForRep
+	if o.netlinkProvider == nil {
+		o.netlinkProvider = netwrappers.NewNetlinkProviderImpl()
 	}
 
 	server := &Server{
@@ -302,8 +306,15 @@ func NewServer(o *Options) (*Server, error) {
 		policyRuleRenderer:      o.policyRuleRenderer,
 		tcRuleGenerator:         o.tcRuleGenerator,
 		sriovnetProvider:        o.sriovnetProvider,
+		netlinkProvider:         o.netlinkProvider,
 		createActuatorFromRepFn: o.createActuatorForRep,
 	}
+
+	if server.createActuatorFromRepFn == nil {
+		// use builtin method if unspecified
+		server.createActuatorFromRepFn = server.createActuatorForRep
+	}
+
 	server.syncRunner = async.NewBoundedFrequencyRunner(
 		"sync-runner", server.syncMultiPolicy, minSyncPeriod, syncPeriod, burstSyncs)
 
@@ -551,7 +562,11 @@ func (s *Server) syncMultiPolicy() {
 			klog.V(5).Infof("tcObjs: %+v", tcObjs)
 
 			// Actuate TC rules
-			actuator := s.createActuatorFromRepFn(rep)
+			actuator, err := s.createActuatorFromRepFn(rep)
+			if err != nil {
+				klog.ErrorS(err, "Failed to create actuator. skipping.")
+				continue
+			}
 
 			err = actuator.Actuate(tcObjs)
 			if err != nil {
@@ -641,9 +656,24 @@ func (s *Server) getRepresentor(pciAddr string) (string, error) {
 	return vfRep, nil
 }
 
-// createActuatorForRep creates a new tc.Actuator with provider representor netdev
-func createActuatorForRep(rep string) tc.Actuator {
-	tcAPI := driver.NewTcCmdLineImpl(
-		rep, klog.NewKlogr().WithName("tc-cmdline-driver"), exec.New())
-	return tc.NewActuatorTCImpl(tcAPI, klog.NewKlogr().WithName("tc-actuator"))
+// createActuatorForRepFn creates a new tc.Actuator given tc Driver type and representor netdev
+func (s *Server) createActuatorForRep(rep string) (tc.Actuator, error) {
+	var tcAPI tc.TC
+
+	switch s.Options.tcDriver {
+	case "netlink":
+		lnk, err := s.netlinkProvider.LinkByName(rep)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get link from rep: %s", rep)
+		}
+		tcAPI = netlinkdriver.NewTcNetlinkImpl(
+			lnk, klog.NewKlogr().WithName("tc-netlink-driver"), s.netlinkProvider)
+	case "cmdline":
+		tcAPI = cmdlinedriver.NewTcCmdLineImpl(
+			rep, klog.NewKlogr().WithName("tc-cmdline-driver"), exec.New())
+	default:
+		return nil, fmt.Errorf("unknown TC driver: %s", s.Options.tcDriver)
+	}
+
+	return tc.NewActuatorTCImpl(tcAPI, klog.NewKlogr().WithName("tc-actuator")), nil
 }
