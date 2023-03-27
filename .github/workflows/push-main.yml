@@ -31,7 +31,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push to GitHub Container Registry
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
@@ -61,10 +61,4 @@ jobs:
         env:
           REPOSITORY: ghcr.io/${{ steps.repo_name.outputs.repository }}
         run: |
-          # Get artifacts from previous steps
-          docker pull ${{ env.REPOSITORY }}:latest-amd64
-          # Create and update manifest
-          docker manifest create ${{ env.REPOSITORY }}:latest ${{ env.REPOSITORY }}:latest-amd64
-          docker manifest annotate ${{ env.REPOSITORY }}:latest ${{ env.REPOSITORY }}:latest-amd64 --arch amd64
-          # Push manifest
-          docker manifest push ${{ env.REPOSITORY }}:latest
+          docker buildx imagetools create -t ${{ env.REPOSITORY }}:latest ${{ env.REPOSITORY }}:latest-amd64
