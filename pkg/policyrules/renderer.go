@@ -5,15 +5,14 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/controllers"
+	multiutils "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 	multiv1beta1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog/v2"
-
-	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/controllers"
-	multiutils "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
+	klog "k8s.io/klog/v2"
 )
 
 // Renderer is an interface used to render PolicyRuleSet for a Pod Network
@@ -357,6 +356,8 @@ func (r *RendererImpl) getPorts(ports []multiv1beta1.MultiNetworkPolicyPort) []P
 }
 
 // RenderIngress implements Renderer Interface
+//
+//nolint:all
 func (r *RendererImpl) RenderIngress(target *controllers.PodInfo, currentPolicies controllers.PolicyMap,
 	currentPods controllers.PodMap, currentNamespaces controllers.NamespaceMap) ([]PolicyRuleSet, error) {
 	// TODO implement me

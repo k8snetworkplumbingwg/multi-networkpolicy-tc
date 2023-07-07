@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"k8s.io/klog/v2"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	klog "k8s.io/klog/v2"
 
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/generator"

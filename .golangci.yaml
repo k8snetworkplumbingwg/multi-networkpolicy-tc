@@ -30,7 +30,6 @@ linters:
     - contextcheck
     #- cyclop
     - decorder
-    - depguard
     - dogsled
     - durationcheck
     - errcheck
