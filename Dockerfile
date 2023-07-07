@@ -2,10 +2,10 @@
 FROM golang:1.18 as go-build
 
 # Add everything
-ADD . /usr/src/multi-networkpolicy-tc
+COPY . /usr/src/multi-networkpolicy-tc
 
-RUN cd /usr/src/multi-networkpolicy-tc && \
-    go build ./cmd/multi-networkpolicy-tc/
+WORKDIR /usr/src/multi-networkpolicy-tc
+RUN go build ./cmd/multi-networkpolicy-tc/
 
 # Build iproute2
 FROM quay.io/centos/centos:stream8 as iproute-build
@@ -15,8 +15,10 @@ ARG IPROUTE2_TAG=v5.17.0
 RUN dnf -q -y groupinstall "Development Tools"
 RUN dnf -q -y install git libmnl-devel
 
-RUN git clone --branch ${IPROUTE2_TAG} https://github.com/shemminger/iproute2.git && \
-    cd /iproute2 && make && make install
+RUN git clone --branch ${IPROUTE2_TAG} https://github.com/shemminger/iproute2.git
+
+WORKDIR /iproute2
+RUN make && make install
 
 # collect everything into target container
 # TODO(adrianc): once we switch to native netlink to drive TC  we can switch back to distroless
