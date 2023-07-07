@@ -10,7 +10,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog/v2"
+	klog "k8s.io/klog/v2"
 )
 
 // NamespaceHandler is an abstract interface of objects which receive
@@ -42,7 +42,7 @@ func NewNamespaceConfig(nsInformer coreinformers.NamespaceInformer, resyncPeriod
 		listerSynced: nsInformer.Informer().HasSynced,
 	}
 
-	nsInformer.Informer().AddEventHandlerWithResyncPeriod(
+	_, _ = nsInformer.Informer().AddEventHandlerWithResyncPeriod(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    result.handleAddNamespace,
 			UpdateFunc: result.handleUpdateNamespace,

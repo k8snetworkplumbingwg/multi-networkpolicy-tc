@@ -5,12 +5,12 @@ import (
 	"net"
 	"reflect"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	multiv1beta1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog/v2"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	klog "k8s.io/klog/v2"
 
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/controllers"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"

@@ -8,7 +8,7 @@ import (
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netlink/nl"
 	"golang.org/x/sys/unix"
-	"k8s.io/klog/v2"
+	klog "k8s.io/klog/v2"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

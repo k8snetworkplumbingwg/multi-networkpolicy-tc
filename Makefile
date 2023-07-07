@@ -129,7 +129,7 @@ kustomize: ## Download kustomize locally if necessary.
 
 .PHONY: golangci-lint
 golangci-lint: ## Download golangci-lint locally if necessary.
-	$(call go-install-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/cmd/golangci-lint@v1.49.0)
+	$(call go-install-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/cmd/golangci-lint@v1.53.3)
 
 .PHONY: mockery
 mockery: ## Download mockery if necessary.

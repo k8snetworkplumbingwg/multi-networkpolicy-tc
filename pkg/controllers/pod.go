@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	multiutils "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 	multiv1beta1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
 	netdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	netdefutils "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils"
@@ -17,9 +18,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog/v2"
-
-	multiutils "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
+	klog "k8s.io/klog/v2"
 )
 
 // PodHandler is an abstract interface of objects which receive
@@ -51,7 +50,7 @@ func NewPodConfig(podInformer coreinformers.PodInformer, resyncPeriod time.Durat
 		listerSynced: podInformer.Informer().HasSynced,
 	}
 
-	podInformer.Informer().AddEventHandlerWithResyncPeriod(
+	_, _ = podInformer.Informer().AddEventHandlerWithResyncPeriod(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    result.handleAddPod,
 			UpdateFunc: result.handleUpdatePod,
@@ -284,7 +283,7 @@ func (pct *PodChangeTracker) newPodInfo(pod *v1.Pod) *PodInfo {
 				if networkPlugins[namespacedName] == pluginName {
 					deviceID, err := multiutils.GetDeviceIDFromNetworkStatus(s)
 					if err != nil {
-						klog.ErrorS(err, "failed to get device ID for pod interface",
+						klog.Error(err, "failed to get device ID for pod interface",
 							"pod", podNamespacedName, "network", namespacedName)
 						continue
 					}

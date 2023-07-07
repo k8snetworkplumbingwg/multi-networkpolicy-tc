@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"k8s.io/client-go/rest"
-	"k8s.io/klog/v2"
+	klog "k8s.io/klog/v2"
 
 	netwrappers "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/net"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/policyrules"
