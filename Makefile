@@ -76,16 +76,20 @@ unit-test: envtest ## Run unit tests.
 .PHONY: test
 test: lint unit-test ## Run all tests (lint, unit-test).
 
+GOVERALLS = $(BINDIR)/goveralls
+$(GOVERALLS): | $(BASE) ; $(info  installing goveralls...)
+	$(call go-install-tool,$(GOVERALLS),github.com/mattn/goveralls@latest)
+
 .PHONY: test-coverage
-test-coverage: | envtest gocovmerge gcov2lcov ## Run coverage tests
-	mkdir -p $(PROJECT_DIR)/build/coverage/pkgs
-	for pkg in $(TESTPKGS); do \
-		KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test \
-		-covermode=atomic \
-		-coverprofile="$(COVERAGE_DIR)/pkgs/`echo $$pkg | tr "/" "-"`.cover" $$pkg ;\
-	done
-	$(GOCOVMERGE) $(COVERAGE_DIR)/pkgs/*.cover > $(COVERAGE_DIR)/profile.out
-	$(GCOV2LCOV) -infile $(COVERAGE_DIR)/profile.out -outfile $(COVERAGE_DIR)/lcov.info
+COVERAGE_MODE = count
+COVER_PROFILE = multi-networkpolicy-tc.cover
+test-coverage-tools: | $(GOVERALLS)
+test-coverage: test-coverage-tools | $(BASE) ; $(info  running coverage tests...) @ ## Run coverage tests
+	$Q go test -covermode=$(COVERAGE_MODE) -coverprofile=$(COVER_PROFILE) ./...
+
+.PHONY: upload-coverage
+upload-coverage: test-coverage-tools | $(BASE) ; $(info  uploading coverage results...) @ ## Upload coverage report
+	$(GOVERALLS) -coverprofile=$(COVER_PROFILE) -service=github
 
 ##@ Build
 .PHONY: build
