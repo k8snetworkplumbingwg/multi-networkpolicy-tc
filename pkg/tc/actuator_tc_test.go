@@ -6,11 +6,12 @@ import (
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 	"net"
 
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/pkg/errors"
+	klog "k8s.io/klog/v2"
+
 	"github.com/stretchr/testify/mock"
 
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc"

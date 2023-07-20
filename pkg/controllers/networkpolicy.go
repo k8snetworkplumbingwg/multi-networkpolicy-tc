@@ -1,20 +1,18 @@
 package controllers
 
-//nolint:lll
 import (
 	"fmt"
 	"reflect"
 	"sync"
 	"time"
 
+	multiutils "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
 	multiv1beta1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
 	multiinformerv1beta1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/informers/externalversions/k8s.cni.cncf.io/v1beta1"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog/v2"
-
-	multiutils "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/utils"
+	klog "k8s.io/klog/v2"
 )
 
 // NetworkPolicyHandler is an abstract interface of objects which receive
@@ -47,7 +45,7 @@ func NewNetworkPolicyConfig(policyInformer multiinformerv1beta1.MultiNetworkPoli
 		listerSynced: policyInformer.Informer().HasSynced,
 	}
 
-	policyInformer.Informer().AddEventHandlerWithResyncPeriod(
+	_, _ = policyInformer.Informer().AddEventHandlerWithResyncPeriod(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    result.handleAddPolicy,
 			UpdateFunc: result.handleUpdatePolicy,

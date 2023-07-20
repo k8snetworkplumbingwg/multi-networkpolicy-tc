@@ -47,7 +47,7 @@ jobs:
           file: ./Dockerfile
 
   create-push-manifest:
-    needs: [build-push-amd64]
+    needs: [ build-push-amd64 ]
     runs-on: ubuntu-latest
     steps:
       - name: Set repository as lower-case output variable
@@ -77,6 +77,6 @@ jobs:
       - name: Create manifest for multi-arch images
         env:
           REPOSITORY: ghcr.io/${{ steps.repo_name.outputs.repository }}
-        run: |
-          docker buildx imagetools create -t ${{ env.REPOSITORY }}:stable ${{ env.REPOSITORY }}:stable-amd64
-          docker buildx imagetools create -t ${{ steps.docker_meta.outputs.tags }} ${{ steps.docker_meta.outputs.tags }}-amd64
+        run: docker buildx imagetools create \
+          -t ${{ env.REPOSITORY }}:stable ${{ env.REPOSITORY }}:stable-amd64 \
+          -t ${{ steps.docker_meta.outputs.tags }} ${{ steps.docker_meta.outputs.tags }}-amd64

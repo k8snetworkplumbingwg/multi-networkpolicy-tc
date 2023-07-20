@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
+	klog "k8s.io/klog/v2"
 	"k8s.io/utils/exec"
 
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"

@@ -38,7 +38,8 @@ type InterfaceInfo struct {
 }
 
 // GetUID returns a unique ID for InterfaceInfo in the following format:
-//  <network-namespace>/<network-name>/<interface-name>
+//
+//	<network-namespace>/<network-name>/<interface-name>
 func (i *InterfaceInfo) GetUID() string {
 	return strings.Join([]string{i.Network, i.InterfaceName}, "/")
 }

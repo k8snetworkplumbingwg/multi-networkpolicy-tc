@@ -1,6 +1,5 @@
 package controllers
 
-//nolint:lll
 import (
 	"encoding/json"
 	"fmt"
@@ -16,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog/v2"
+	klog "k8s.io/klog/v2"
 )
 
 // NetDefHandler is an abstract interface of objects which receive
@@ -49,7 +48,7 @@ func NewNetDefConfig(netdefInformer netdefinformerv1.NetworkAttachmentDefinition
 		listerSynced: netdefInformer.Informer().HasSynced,
 	}
 
-	netdefInformer.Informer().AddEventHandlerWithResyncPeriod(
+	_, _ = netdefInformer.Informer().AddEventHandlerWithResyncPeriod(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    result.handleAddNetDef,
 			UpdateFunc: result.handleUpdateNetDef,

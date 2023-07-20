@@ -4,7 +4,7 @@ import (
 	"flag"
 	"testing"
 
-	"k8s.io/klog/v2"
+	klog "k8s.io/klog/v2"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

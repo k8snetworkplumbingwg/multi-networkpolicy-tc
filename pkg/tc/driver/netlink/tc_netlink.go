@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/vishvananda/netlink"
-	"k8s.io/klog/v2"
+	klog "k8s.io/klog/v2"
 
 	multinet "github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/net"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy-tc/pkg/tc/types"

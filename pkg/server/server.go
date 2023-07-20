@@ -1,6 +1,5 @@
 package server
 
-//nolint:lll
 import (
 	"context"
 	"fmt"
@@ -31,7 +30,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/klog/v2"
+	klog "k8s.io/klog/v2"
 	"k8s.io/kubernetes/pkg/util/async"
 	"k8s.io/utils/exec"
 
@@ -185,6 +184,7 @@ func (s *Server) birthCry() {
 // SyncLoop Waits on Server.Initialized then starts Server.syncRunner.Loop() until context is Done
 func (s *Server) SyncLoop(ctx context.Context) {
 	klog.Infof("SyncLoop waiting for server initialization")
+	//nolint:all
 	_ = wait.PollUntilWithContext(ctx, time.Millisecond*500, func(_ context.Context) (done bool, err error) {
 		return s.isInitialized(), nil
 	})
